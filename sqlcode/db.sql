@@ -189,12 +189,12 @@ INSERT INTO StudentCourse (StudentID, CourseID) VALUES
 -- 7. AVAILABILITYSLOT (20 rows)
 -- dates spread, tutors + courses reused
 INSERT INTO AvailabilitySlot (SlotID, Date, StartTime, EndTime, Capacity, Location, Status, TutorID, CourseID) VALUES
-(1, '2025-11-10', '10:00:00', '11:00:00', 2, 'Room A101', 'Open', 1, 1),
+(1, '2025-11-06', '10:00:00', '11:00:00', 2, 'Room A101', 'Open', 1, 1),
 (2, '2025-11-10', '11:00:00', '12:00:00', 1, 'Room A101', 'Open', 1, 1),
-(3, '2025-11-11', '09:00:00', '10:00:00', 3, 'Room B202', 'Open', 2, 2),
-(4, '2025-11-11', '14:00:00', '15:00:00', 1, 'Room B202', 'Closed', 2, 2),
-(5, '2025-11-12', '13:00:00', '14:00:00', 2, 'Room C303', 'Open', 3, 3),
-(6, '2025-11-12', '15:00:00', '16:00:00', 1, 'Room C303', 'Open', 3, 3),
+(3, '2025-11-07', '09:00:00', '10:00:00', 3, 'Room B202', 'Open', 2, 2),
+(4, '2025-11-07', '14:00:00', '15:00:00', 1, 'Room B202', 'Closed', 2, 2),
+(5, '2025-11-08', '13:00:00', '14:00:00', 2, 'Room C303', 'Open', 3, 3),
+(6, '2025-11-08', '15:00:00', '16:00:00', 1, 'Room C303', 'Open', 3, 3),
 (7, '2025-11-13', '10:00:00', '11:00:00', 2, 'Room D404', 'Open', 4, 4),
 (8, '2025-11-13', '11:00:00', '12:00:00', 2, 'Room D404', 'Open', 4, 4),
 (9, '2025-11-14', '09:30:00', '10:30:00', 1, 'Room E505', 'Open', 5, 5),
@@ -208,7 +208,13 @@ INSERT INTO AvailabilitySlot (SlotID, Date, StartTime, EndTime, Capacity, Locati
 (17, '2025-11-18', '11:00:00', '12:00:00', 2, 'Room I909', 'Open', 9, 9),
 (18, '2025-11-18', '12:00:00', '13:00:00', 1, 'Room I909', 'Open', 9, 9),
 (19, '2025-11-19', '13:00:00', '14:00:00', 2, 'Room J010', 'Open', 10, 10),
-(20, '2025-11-19', '14:00:00', '15:00:00', 2, 'Room J010', 'Open', 10, 10);
+(20, '2025-11-19', '14:00:00', '15:00:00', 2, 'Room J010', 'Open', 10, 10),
+(21, '2025-11-10', '10:00:00', '11:00:00', 2, 'Room A101', 'Open', 1, 1),
+(22, '2025-11-10', '11:00:00', '12:00:00', 1, 'Room A101', 'Open', 1, 1),
+(23, '2025-11-11', '09:00:00', '10:00:00', 3, 'Room B202', 'Open', 2, 2),
+(24, '2025-11-11', '14:00:00', '15:00:00', 1, 'Room B202', 'Closed', 2, 2),
+(25, '2025-11-12', '13:00:00', '14:00:00', 2, 'Room C303', 'Open', 3, 3);
+
 
 -- 8. BOOKING (10 rows) – only Confirmed/Completed
 INSERT INTO Booking (BookingID, Status, CreatedAt, SlotID, StudentID) VALUES
@@ -221,7 +227,12 @@ INSERT INTO Booking (BookingID, Status, CreatedAt, SlotID, StudentID) VALUES
 (7, 'Completed', '2025-11-04 09:50:00', 7, 7),
 (8, 'Completed', '2025-11-04 10:30:00', 8, 8),
 (9, 'Confirmed', '2025-11-05 11:05:00', 9, 9),
-(10, 'Completed', '2025-11-05 11:40:00', 10, 10);
+(10, 'Completed', '2025-11-05 11:40:00', 10, 10),
+(11, 'Confirmed', '2025-11-06 09:00:00', 21, 11),
+(12, 'Confirmed', '2025-11-06 09:05:00', 22, 12),
+(13, 'Confirmed', '2025-11-06 09:10:00', 23, 13),
+(14, 'Confirmed', '2025-11-06 09:15:00', 24, 14),
+(15, 'Confirmed', '2025-11-06 09:20:00', 25, 15);
 
 -- 9. ATTENDANCE (10 rows) – 1-to-1 with Booking
 INSERT INTO Attendance (BookingID, Attended, MarkedAt) VALUES
