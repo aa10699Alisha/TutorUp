@@ -308,6 +308,26 @@ WHERE s.CourseID = 1
   AND s.Status = 'Open'
 ORDER BY s.Date, s.StartTime;
 
+-- 5PreA Trigger for checking if a slot is open before inserting
+
+DELIMITER $$
+CREATE TRIGGER booking_only_if_open
+BEFORE INSERT ON Booking
+FOR EACH ROW
+BEGIN
+  DECLARE v_status VARCHAR(20);
+
+  SELECT Status INTO v_status
+  FROM AvailabilitySlot
+  WHERE SlotID = NEW.SlotID;
+
+  IF v_status <> 'Open' THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Cannot book: slot is not Open';
+  END IF;
+END$$
+DELIMITER ;
+
 -- 5A. When user books a slot, check that slot is open before booking and then insert that record into booking table
 SELECT Status
 FROM AvailabilitySlot
@@ -315,15 +335,6 @@ WHERE SlotID = 5;
 
 INSERT INTO Booking (Status, SlotID, StudentID)
 VALUES ('Confirmed', 5, 12);   
-
--- 5B. After booking, update slot status if capacity reached
-UPDATE AvailabilitySlot
-SET Status = 'Closed'
-WHERE SlotID = 5
-    AND (SELECT COUNT(*)
-            FROM Booking
-            WHERE SlotID = 5
-            AND Status <> 'Cancelled') >= Capacity;
 
 -- 6A. When student clicks My Sessions, and then upcoming sessions you have a procedure that sorts by time by default, tutor name, course name
 DELIMITER $$
@@ -426,9 +437,61 @@ INSERT INTO Review (BookingID, Rating, Comment, ReviewDate)
 VALUES (10, 5, 'Business concepts were very clear.', NOW());
 
 -- 8A. When student cancels a booking update the booking status
-UPDATE Booking
-SET Status = 'Cancelled'
-WHERE BookingID = 6;
+
+-- Assumes: AvailabilitySlot(SlotID PK, Capacity INT, Status ENUM('Open','Full',...))
+-- Booking(BookingID PK, SlotID FK, StudentID FK, Status ENUM('Confirmed','Cancelled',...))
+
+DELIMITER $$
+
+CREATE PROCEDURE cancel_booking(IN p_booking_id INT, IN p_student_id INT)
+BEGIN
+  DECLARE v_slot_id INT;
+  DECLARE v_capacity INT;
+  DECLARE v_confirmed INT;
+
+  -- Ensure we're canceling an actually confirmed booking that belongs to the student
+  SELECT b.SlotID
+    INTO v_slot_id
+  FROM Booking b
+  WHERE b.BookingID = p_booking_id
+    AND b.StudentID = p_student_id
+    AND b.Status = 'Confirmed'
+  FOR UPDATE;
+
+  IF v_slot_id IS NULL THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Booking not found or not Confirmed for this student';
+  END IF;
+
+  -- 1) Cancel the booking
+  UPDATE Booking
+  SET Status = 'Cancelled'
+  WHERE BookingID = p_booking_id;
+
+  -- 2) Recompute how many confirmed bookings remain on that slot
+  SELECT Capacity INTO v_capacity
+  FROM AvailabilitySlot
+  WHERE SlotID = v_slot_id
+  FOR UPDATE;
+
+  SELECT COUNT(*) INTO v_confirmed
+  FROM Booking
+  WHERE SlotID = v_slot_id
+    AND Status = 'Confirmed';
+
+  -- 3) If capacity allows, mark slot Open; otherwise leave it as-is (e.g., 'Full')
+  IF v_confirmed < v_capacity THEN
+    UPDATE AvailabilitySlot
+    SET Status = 'Open'
+    WHERE SlotID = v_slot_id;
+  END IF;
+END$$
+
+DELIMITER ;
+
+
+CALL cancel_booking(:booking_id, :student_id);
+
 
 -- 9A. When tutor logs in he sees the upcoming sessions with student name, course name, date, location sorted by time by default but can sort by student name or course name
 DELIMITER $$
@@ -603,6 +666,9 @@ WHERE BookingID IN (
 DELETE FROM Booking
 WHERE StudentID = :student_id;
 
+DELETE FROM StudentCourse
+WHERE StudentID = :student_id;
+
 DELETE FROM Student
 WHERE StudentID = :student_id;
 
@@ -637,6 +703,9 @@ WHERE SlotID IN (
 DELETE FROM AvailabilitySlot
 WHERE TutorID = :tutor_id;
 
+DELETE FROM TutorCourse
+WHERE TutorID = :tutor_id;
+
 DELETE FROM Tutor
 WHERE TutorID = :tutor_id;
 
@@ -657,7 +726,7 @@ BEGIN
     INTO current_bookings
     FROM Booking
     WHERE SlotID = NEW.SlotID
-      AND Status <> 'Cancelled';
+      AND Status = 'Confirmed';
 
     -- get slot capacity
     SELECT Capacity
@@ -675,19 +744,3 @@ END$$
 
 DELIMITER ;
 
--- 17. Open slot when a booking is cancelled and capacity allows
-SELECT
-    b.BookingID,
-    s.Date               AS session_day,
-    CONCAT(s.StartTime, ' - ', s.EndTime) AS time_slot,
-    c.CourseName         AS course,
-    t.FullName           AS instructor,
-    s.Location,
-    b.Status
-FROM Booking b
-JOIN AvailabilitySlot s ON b.SlotID = s.SlotID
-JOIN Course c          ON s.CourseID = c.CourseID
-JOIN Tutor t           ON s.TutorID = t.TutorID
-WHERE b.StudentID = :student_id
-  AND b.Status <> 'Cancelled'
-ORDER BY s.Date ASC, s.StartTime ASC;
