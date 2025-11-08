@@ -250,63 +250,48 @@ INSERT INTO Review (BookingID, Rating, Comment, ReviewDate) VALUES
 (10, 5, 'Business concepts were very clear.', '2025-11-05 13:30:00');
 
 
-/* SIGN UP FUNCTONALITY */
-
-/* WHEN A STUDENT SIGNS UP, ADD A NEW RECORD */
--- check if email already exists for a student
+-- 1A. Check if student email already exists
 SELECT StudentID
 FROM Student
 WHERE Email = 'student.email@example.com';
 
--- if no rows returned, create the student
-INSERT INTO Student (FullName, Email, Password, DateJoined)
+-- If no rows from above, insert student
+INSERT INTO Student (FullName, Email, HashedPassword, DateJoined)
 VALUES ('Olivia Johnson', 'student.email@example.com', '$2b$10$some_hashed_pw_here', CURDATE());
 
--- check if email already exists for a tutor
+-- 1B. Check if tutor email already exists
 SELECT TutorID
 FROM Tutor
 WHERE Email = 'tutor.email@example.com';
 
--- if no rows returned, create the tutor
-INSERT INTO Tutor (FullName, Email, Password, Bio, ExperienceYears, RatingAverage)
-VALUES (
-  'William Carter',
-  'tutor.email@example.com',
-  '$2b$10$some_hashed_pw_here',
-  'CS tutor',
-  0,
-  0.00
-);
+-- 1B. If no rows from above, insert tutor
+INSERT INTO Tutor (FullName, Email, HashedPassword, Bio, ExperienceYears, RatingAverage)
+VALUES ('William Carter','tutor.email@example.com','$2b$10$some_hashed_pw_here','CS tutor',0,0.00);
 
-
-/* SIGN IN FUNCTIONALITY */
-
-
--- if user clicked sign in as student
+-- 2A. Student sign in
 SELECT StudentID, FullName
 FROM Student
 WHERE Email = 'student.email@example.com'
-  AND Password = '$2b$10$some_hashed_pw_here';
+  AND HashedPassword = '$2b$10$some_hashed_pw_here';
 
--- if user clicked sign in as tutor
+-- 2B. Tutor sign in
 SELECT TutorID, FullName
 FROM Tutor
 WHERE Email = 'tutor.email@example.com'
-  AND Password = '$2b$10$some_hashed_pw_here';
+  AND HashedPassword = '$2b$10$some_hashed_pw_here';
 
-
--- WHEN USER GOES TO HOME SCREEN SHOW THE MAJOR
+-- 3A. When user goes to home screen, show all majors
 SELECT MajorID, MajorName
 FROM Major
 ORDER BY MajorName;
 
--- WHEN THE USER SELECTS A MAJOR, SHOW COURSES IN THAT MAJOR
+-- 3B. Show courses for selected major
 SELECT CourseID, CourseCode, CourseName, Description
 FROM Course
 WHERE MajorID = 1
 ORDER BY CourseCode;
 
--- WHEN USER PICKS A COURSE SHOW THE AVAILABLE SLOTS FOR THAT COURSE AND TUTORS, ON TOP SHOW THAT CORUSE INFO 
+-- 4A. When user picks a course show basic info about that course and available slots
 SELECT CourseName, Description
 FROM Course
 WHERE CourseID = 1;
@@ -319,35 +304,82 @@ SELECT s.SlotID,
        t.FullName AS TutorName
 FROM AvailabilitySlot s
 JOIN Tutor t ON s.TutorID = t.TutorID
-WHERE s.CourseID = 1      -- the course the student clicked
+WHERE s.CourseID = 1             
   AND s.Status = 'Open'
 ORDER BY s.Date, s.StartTime;
 
--- WHEN USER BOOKS A SLOT, INSERT A NEW RECORD IN BOOKING TABLE BY FIRST SCHECKING 
+-- 5A. When user books a slot, check that slot is open before booking and then insert that record into booking table
 SELECT Status
 FROM AvailabilitySlot
 WHERE SlotID = 5;
 
 INSERT INTO Booking (Status, SlotID, StudentID)
-VALUES ('Completed', 5, 12);
+VALUES ('Confirmed', 5, 12);   
 
--- When student clicks upcoming sessions
-SELECT b.BookingID,
-       b.Status,
-       s.Date,
-       s.StartTime,
-       c.CourseName,
-       t.FullName AS TutorName
-FROM Booking b
-JOIN AvailabilitySlot s ON b.SlotID = s.SlotID
-JOIN Course c ON s.CourseID = c.CourseID
-JOIN Tutor t ON s.TutorID = t.TutorID
-WHERE b.StudentID = 12
-  AND s.Date >= CURDATE()
-  AND b.Status <> 'Canceled'
-ORDER BY s.Date, s.StartTime;
+-- 5B. After booking, update slot status if capacity reached
+UPDATE AvailabilitySlot
+SET Status = 'Closed'
+WHERE SlotID = 5
+    AND (SELECT COUNT(*)
+            FROM Booking
+            WHERE SlotID = 5
+            AND Status <> 'Cancelled') >= Capacity;
 
--- When student clicks past sessions
+-- 6A. When student clicks My Sessions, and then upcoming sessions you have a procedure that sorts by time by default, tutor name, course name
+DELIMITER $$
+
+CREATE PROCEDURE GetStudentSessions (
+    IN p_student_id INT,
+    IN p_sort VARCHAR(20)
+)
+BEGIN
+    IF p_sort = 'tutor' THEN
+        SELECT b.booking_id, b.status, s.date, s.start_time,
+               c.course_name, t.full_name AS tutor_name
+        FROM Booking b
+        JOIN AvailabilitySlot s ON b.slot_id = s.slot_id
+        JOIN Course c           ON s.course_id = c.course_id
+        JOIN Tutor t            ON s.tutor_id = t.tutor_id
+        WHERE b.student_id = p_student_id
+          AND s.date >= CURDATE()
+          AND b.status <> 'Canceled'
+        ORDER BY t.full_name, s.date, s.start_time;
+    ELSEIF p_sort = 'course' THEN
+        SELECT b.booking_id, b.status, s.date, s.start_time,
+               c.course_name, t.full_name AS tutor_name
+        FROM Booking b
+        JOIN AvailabilitySlot s ON b.slot_id = s.slot_id
+        JOIN Course c           ON s.course_id = c.course_id
+        JOIN Tutor t            ON s.tutor_id = t.tutor_id
+        WHERE b.student_id = p_student_id
+          AND s.date >= CURDATE()
+          AND b.status <> 'Canceled'
+        ORDER BY c.course_name, s.date, s.start_time;
+    ELSE
+        -- default: by date/time
+        SELECT b.booking_id, b.status, s.date, s.start_time,
+               c.course_name, t.full_name AS tutor_name
+        FROM Booking b
+        JOIN AvailabilitySlot s ON b.slot_id = s.slot_id
+        JOIN Course c           ON s.course_id = c.course_id
+        JOIN Tutor t            ON s.tutor_id = t.tutor_id
+        WHERE b.student_id = p_student_id
+          AND s.date >= CURDATE()
+          AND b.status <> 'Canceled'
+        ORDER BY s.date, s.start_time;
+    END IF;
+END$$
+
+DELIMITER ;
+
+-- You can run this by:
+CALL GetStudentSessions(12, 'tutor');
+-- or
+CALL GetStudentSessions(12, 'course');
+-- or
+CALL GetStudentSessions(12, 'date');
+
+-- 6B. When student views My sessions and then past sessions 
 SELECT b.BookingID,
        b.Status,
        s.Date,
@@ -358,46 +390,78 @@ SELECT b.BookingID,
        r.Comment
 FROM Booking b
 JOIN AvailabilitySlot s ON b.SlotID = s.SlotID
-JOIN Course c ON s.CourseID = c.CourseID
-JOIN Tutor t ON s.TutorID = t.TutorID
-LEFT JOIN Review r ON b.BookingID = r.BookingID
+JOIN Course c          ON s.CourseID = c.CourseID
+JOIN Tutor t           ON s.TutorID = t.TutorID
+LEFT JOIN Review r     ON b.BookingID = r.BookingID
 WHERE b.StudentID = 12
   AND s.Date < CURDATE()
 ORDER BY s.Date DESC, s.StartTime DESC;
 
--- When a user submits a review for a completed session
+-- 7A. When student submits a review for a completed session
 INSERT INTO Review (BookingID, Rating, Comment, ReviewDate)
 VALUES (10, 5, 'Business concepts were very clear.', NOW());
 
-
--- When a student cancels a booking, update the booking status
+-- 8A. When student cancels a booking update the booking status
 UPDATE Booking
 SET Status = 'Cancelled'
 WHERE BookingID = 6;
 
--- When tutor logs in he sees the upcoming sessions with student name, course name, date, location sorted by time by default
-SELECT b.BookingID,
-       s.Date,
-       s.StartTime,
-       s.Location,
-       c.CourseName,
-       st.FullName AS StudentName
-FROM Booking b
-JOIN AvailabilitySlot s ON b.SlotID = s.SlotID
-JOIN Course c ON s.CourseID = c.CourseID
-JOIN Student st ON b.StudentID = st.StudentID
-WHERE s.TutorID = 3
-    AND s.Date >= CURDATE()
-    AND b.Status = 'Confirmed'
-ORDER BY s.Date, s.StartTime;
+-- 9A. When tutor logs in he sees the upcoming sessions with student name, course name, date, location sorted by time by default but can sort by student name or course name
+DELIMITER $$
 
--- When tutor marks attendance for a session
+CREATE PROCEDURE GetTutorUpcomingSessions (
+    IN p_tutor_id INT,
+    IN p_sort_by VARCHAR(20)
+)
+BEGIN
+    SELECT
+        b.BookingID,
+        s.Date,
+        s.StartTime,
+        s.Location,
+        c.CourseName,
+        st.FullName AS StudentName,
+        b.Status
+    FROM Booking b
+    JOIN AvailabilitySlot s ON b.SlotID = s.SlotID
+    JOIN Course c          ON s.CourseID = c.CourseID
+    JOIN Student st        ON b.StudentID = st.StudentID
+    WHERE s.TutorID = p_tutor_id
+      AND s.Date >= CURDATE()
+      AND b.Status = 'Confirmed'
+    ORDER BY
+        -- 1) sort by time (default)
+        CASE WHEN p_sort_by = 'time' OR p_sort_by IS NULL OR p_sort_by = '' THEN s.Date END ASC,
+        CASE WHEN p_sort_by = 'time' OR p_sort_by IS NULL OR p_sort_by = '' THEN s.StartTime END ASC,
+
+        -- 2) sort by student name
+        CASE WHEN p_sort_by = 'student' THEN st.FullName END ASC,
+        CASE WHEN p_sort_by = 'student' THEN s.Date END ASC,
+        CASE WHEN p_sort_by = 'student' THEN s.StartTime END ASC,
+
+        -- 3) sort by course name
+        CASE WHEN p_sort_by = 'course' THEN c.CourseName END ASC,
+        CASE WHEN p_sort_by = 'course' THEN s.Date END ASC,
+        CASE WHEN p_sort_by = 'course' THEN s.StartTime END ASC;
+END$$
+
+DELIMITER ;
+
+-- You can run this by:
+CALL GetTutorUpcomingSessions(3, 'student');
+-- or
+CALL GetTutorUpcomingSessions(3, 'course');
+-- or
+CALL GetTutorUpcomingSessions(3, 'time');
+
+-- 9B. When tutor views past sessions with attendance and reviews
 UPDATE Attendance
 SET Attended = 'Yes',
     MarkedAt = NOW()
 WHERE BookingID = 5;
 
--- When tutor views past sessions with attendance and reviews
+
+-- 10. When tutor views past sessions with attendance and reviews
 SELECT b.BookingID,
        s.Date,
        s.StartTime,
@@ -409,50 +473,195 @@ SELECT b.BookingID,
        r.Comment
 FROM Booking b
 JOIN AvailabilitySlot s ON b.SlotID = s.SlotID
-JOIN Course c ON s.CourseID = c.CourseID
-JOIN Student st ON b.StudentID = st.StudentID
+JOIN Course c          ON s.CourseID = c.CourseID
+JOIN Student st        ON b.StudentID = st.StudentID
 LEFT JOIN Attendance a ON b.BookingID = a.BookingID
-LEFT JOIN Review r ON b.BookingID = r.BookingID
+LEFT JOIN Review r     ON b.BookingID = r.BookingID
 WHERE s.TutorID = 3
-    AND s.Date < CURDATE()
-ORDER BY s.Date DESC, s.StartTime DESC; 
+  AND s.Date < CURDATE()
+ORDER BY s.Date DESC, s.StartTime DESC;
 
-
--- when a user books a slot, decrease the capacity of that slot by 1
-UPDATE AvailabilitySlot
-SET Capacity = Capacity - 1
-WHERE SlotID = 5;
-
-
-SELECT *
-FROM AvailabilitySlot
-WHERE Status = 'Open'
+-- 11. Update booking status to Completed for past sessions
+UPDATE Booking b
+JOIN AvailabilitySlot s ON b.SlotID = s.SlotID
+SET b.Status = 'Completed'
+WHERE b.Status = 'Confirmed'
   AND (
-        Date > CURDATE()                             -- any day after today
-        OR (Date = CURDATE() AND EndTime > CURTIME()) -- today but not finished yet
+        s.Date < CURDATE()
+        OR (s.Date = CURDATE() AND s.EndTime <= CURTIME())
       );
 
+-- 12A. Today’s slots
+SELECT 
+    s.SlotID,
+    s.Date,
+    s.StartTime,
+    s.EndTime,
+    s.Capacity,
+    s.Status,
+    s.Location,
+    c.CourseName,
+    t.FullName AS TutorName
+FROM AvailabilitySlot s
+JOIN Course c ON s.CourseID = c.CourseID
+JOIN Tutor  t ON s.TutorID = t.TutorID
+WHERE s.Date = CURDATE()
+ORDER BY s.StartTime;
+
+-- 12B. Next day’s slots
+SELECT 
+    s.SlotID,
+    s.Date,
+    s.StartTime,
+    s.EndTime,
+    s.Capacity,
+    s.Status,
+    s.Location,
+    c.CourseName,
+    t.FullName AS TutorName
+FROM AvailabilitySlot s
+JOIN Course c ON s.CourseID = c.CourseID
+JOIN Tutor  t ON s.TutorID = t.TutorID
+WHERE s.Date = DATE_ADD(CURDATE(), INTERVAL 1 DAY)
+ORDER BY s.StartTime;
+
+-- 13A. Student profile
+SELECT 
+    s.FullName  AS name,
+    s.Email     AS email,
+    YEAR(s.DateJoined) AS joined_year,
+    s.DateJoined
+FROM Student s
+WHERE s.StudentID = 12;   
+
+-- 13B. Tutor profile 
+SELECT
+    t.FullName AS name,
+    t.Email    AS email,
+    t.Bio,
+    t.ExperienceYears,
+    t.RatingAverage
+FROM Tutor t
+WHERE t.TutorID = 3;      -- replace with logged-in tutor id
+
+-- 14A. Reset password for student
+UPDATE Student
+SET HashedPassword = 'NEW_HASH'
+WHERE StudentID = 12
+  AND HashedPassword = 'CURRENT_HASH';
+
+-- 14B. Reset password for teacher
+UPDATE Tutor
+SET HashedPassword = 'NEW_HASH'
+WHERE TutorID = 3
+  AND HashedPassword = 'CURRENT_HASH';
+
+-- 15A. Deactivate student account 
+-- verify password (done in app)
+SELECT StudentID
+FROM Student
+WHERE StudentID = :student_id
+  AND HashedPassword = :current_hash;
+
+-- delete reviews for this student's bookings
+DELETE FROM Review
+WHERE BookingID IN (
+    SELECT BookingID FROM Booking WHERE StudentID = :student_id
+);
+
+DELETE FROM Attendance
+WHERE BookingID IN (
+    SELECT BookingID FROM Booking WHERE StudentID = :student_id
+);
+
+DELETE FROM Booking
+WHERE StudentID = :student_id;
+
+DELETE FROM Student
+WHERE StudentID = :student_id;
+
+-- 15B. Deactivate tutor account
+-- verify password (done in app)
+SELECT TutorID
+FROM Tutor
+WHERE TutorID = :tutor_id
+  AND HashedPassword = :current_hash;
+
+DELETE FROM Review
+WHERE BookingID IN (
+    SELECT b.BookingID
+    FROM Booking b
+    JOIN AvailabilitySlot s ON b.SlotID = s.SlotID
+    WHERE s.TutorID = :tutor_id
+);
+
+DELETE FROM Attendance
+WHERE BookingID IN (
+    SELECT b.BookingID
+    FROM Booking b
+    JOIN AvailabilitySlot s ON b.SlotID = s.SlotID
+    WHERE s.TutorID = :tutor_id
+);
+
+DELETE FROM Booking
+WHERE SlotID IN (
+    SELECT SlotID FROM AvailabilitySlot WHERE TutorID = :tutor_id
+);
+
+DELETE FROM AvailabilitySlot
+WHERE TutorID = :tutor_id;
+
+DELETE FROM Tutor
+WHERE TutorID = :tutor_id;
 
 
+-- 16. Close slot when capacity is reached after booking
 
+DELIMITER $$
 
-when a user booking has time passed check it to completed
+CREATE TRIGGER trg_after_booking_insert
+AFTER INSERT ON Booking
+FOR EACH ROW
+BEGIN
+    DECLARE current_bookings INT;
+    DECLARE max_capacity INT;
 
-when booking is 
+    -- count active (non-cancelled) bookings for this slot
+    SELECT COUNT(*)
+    INTO current_bookings
+    FROM Booking
+    WHERE SlotID = NEW.SlotID
+      AND Status <> 'Cancelled';
 
-when u book it checks each slsot each if it still till capacity if new booking it exceeds capacity set sttus to Closed
+    -- get slot capacity
+    SELECT Capacity
+    INTO max_capacity
+    FROM AvailabilitySlot
+    WHERE SlotID = NEW.SlotID;
 
+    -- if we reached capacity, close the slot
+    IF current_bookings >= max_capacity THEN
+        UPDATE AvailabilitySlot
+        SET Status = 'Closed'
+        WHERE SlotID = NEW.SlotID;
+    END IF;
+END$$
 
+DELIMITER ;
 
-
-when you click a slot  show current date by default if user clicks next u sshow those SLOTS
-
-
-wnen u click my sessions it displays all booking status except cancelled whereu see day time slot course intriuctor clcoation
-
-
-
-
-
-when user
-when user clicks upcoming sessiosn u can sort by time coruse instructir defualt by timr 
+-- 17. Open slot when a booking is cancelled and capacity allows
+SELECT
+    b.BookingID,
+    s.Date               AS session_day,
+    CONCAT(s.StartTime, ' - ', s.EndTime) AS time_slot,
+    c.CourseName         AS course,
+    t.FullName           AS instructor,
+    s.Location,
+    b.Status
+FROM Booking b
+JOIN AvailabilitySlot s ON b.SlotID = s.SlotID
+JOIN Course c          ON s.CourseID = c.CourseID
+JOIN Tutor t           ON s.TutorID = t.TutorID
+WHERE b.StudentID = :student_id
+  AND b.Status <> 'Cancelled'
+ORDER BY s.Date ASC, s.StartTime ASC;
