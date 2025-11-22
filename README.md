@@ -102,12 +102,6 @@ The application uses a **MySQL database hosted on Aiven**. The database includes
    
    The `.env` file is already configured with Aiven credentials:
    ```
-   PORT=3001
-   DB_HOST=mysql-306eeb47-nyu-f431.i.aivencloud.com
-   DB_PORT=26601
-   DB_NAME=defaultdb
-   DB_USER=avnadmin
-   DB_PASSWORD=AVNS_5jd3bghbcWipFRkSJho
    ```
 
 4. **Start the backend server:**
