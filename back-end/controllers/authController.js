@@ -39,9 +39,10 @@ const studentSignup = async (req, res) => {
       success: true,
       message: 'Student registered successfully',
       data: {
-        studentId: result.insertId,
+        StudentID: result.insertId,
         fullName,
-        email
+        email,
+        userType: 'student'
       }
     });
   } catch (error) {
@@ -91,9 +92,10 @@ const tutorSignup = async (req, res) => {
       success: true,
       message: 'Tutor registered successfully',
       data: {
-        tutorId: result.insertId,
+        TutorID: result.insertId,
         fullName,
-        email
+        email,
+        userType: 'tutor'
       }
     });
   } catch (error) {
@@ -146,7 +148,7 @@ const studentSignin = async (req, res) => {
       success: true,
       message: 'Login successful',
       data: {
-        studentId: student.StudentID,
+        StudentID: student.StudentID,
         fullName: student.FullName,
         email: student.Email,
         userType: 'student'
@@ -202,7 +204,7 @@ const tutorSignin = async (req, res) => {
       success: true,
       message: 'Login successful',
       data: {
-        tutorId: tutor.TutorID,
+        TutorID: tutor.TutorID,
         fullName: tutor.FullName,
         email: tutor.Email,
         userType: 'tutor'

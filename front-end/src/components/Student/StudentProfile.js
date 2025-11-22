@@ -21,7 +21,9 @@ function StudentProfile({ studentId, onNavigate, onLogout }) {
 
   const fetchProfile = async () => {
     try {
+      console.log('Fetching profile for studentId:', studentId);
       const result = await getStudentProfile(studentId);
+      console.log('Profile result:', result);
       
       if (result.success) {
         setProfile(result.data);
@@ -29,6 +31,7 @@ function StudentProfile({ studentId, onNavigate, onLogout }) {
         setError(result.error || 'Failed to load profile');
       }
     } catch (err) {
+      console.error('Profile fetch error:', err);
       setError('Server error. Please try again.');
     } finally {
       setLoading(false);
@@ -93,9 +96,13 @@ function StudentProfile({ studentId, onNavigate, onLogout }) {
 
       {profile && (
         <div>
-          <p><strong>Name:</strong> {profile.name}</p>
-          <p><strong>Email:</strong> {profile.email}</p>
-          <p><strong>Member Since:</strong> {new Date(profile.DateJoined).toLocaleDateString()}</p>
+          <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+            <h3 style={{ marginTop: 0 }}>Profile Information</h3>
+            <p style={{ fontSize: '1.1em' }}><strong>Name:</strong> {profile.name}</p>
+            <p style={{ fontSize: '1.1em' }}><strong>Email:</strong> {profile.email}</p>
+            <p style={{ fontSize: '1.1em' }}><strong>Member Since:</strong> {profile.DateJoined ? new Date(profile.DateJoined).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</p>
+            {profile.joined_year && <p style={{ fontSize: '1.1em' }}><strong>Joined Year:</strong> {profile.joined_year}</p>}
+          </div>
 
           <div style={{ marginTop: '30px' }}>
             <button 

@@ -19,9 +19,8 @@ import StudentProfile from './components/Student/StudentProfile';
 import TutorSessions from './components/Tutor/TutorSessions';
 import TutorProfile from './components/Tutor/TutorProfile';
 
-// Slot Components
-import TodaySlots from './components/Slots/TodaySlots';
-import TomorrowSlots from './components/Slots/TomorrowSlots';
+// Settings Component
+import Settings from './components/settings/Settings';
 
 function App() {
   const [currentPage, setCurrentPage] = useState('welcome');
@@ -49,9 +48,9 @@ function App() {
       case 'welcome':
         return <Welcome onNavigate={setCurrentPage} />;
       case 'student-signup':
-        return <StudentSignup onNavigate={setCurrentPage} />;
+        return <StudentSignup onNavigate={setCurrentPage} onLogin={handleLogin} />;
       case 'tutor-signup':
-        return <TutorSignup onNavigate={setCurrentPage} />;
+        return <TutorSignup onNavigate={setCurrentPage} onLogin={handleLogin} />;
       case 'student-signin':
         return <StudentSignin onNavigate={setCurrentPage} onLogin={handleLogin} />;
       case 'tutor-signin':
@@ -78,10 +77,8 @@ function App() {
         return <TutorSessions tutorId={user?.TutorID} onNavigate={setCurrentPage} />;
       case 'tutor-profile':
         return <TutorProfile tutorId={user?.TutorID} onNavigate={setCurrentPage} onLogout={handleLogout} />;
-      case 'today-slots':
-        return <TodaySlots onNavigate={setCurrentPage} />;
-      case 'tomorrow-slots':
-        return <TomorrowSlots onNavigate={setCurrentPage} />;
+      case 'settings':
+        return <Settings user={user} userType={userType} onNavigate={setCurrentPage} onLogout={handleLogout} />;
       default:
         return <Welcome onNavigate={setCurrentPage} />;
     }
@@ -97,16 +94,14 @@ function App() {
               <>
                 <button onClick={() => setCurrentPage('majors')}>Browse Courses</button>
                 <button onClick={() => setCurrentPage('student-sessions')}>My Sessions</button>
-                <button onClick={() => setCurrentPage('today-slots')}>Today's Slots</button>
-                <button onClick={() => setCurrentPage('tomorrow-slots')}>Tomorrow's Slots</button>
+                <button onClick={() => setCurrentPage('settings')}>Settings</button>
                 <button onClick={() => setCurrentPage('student-profile')}>Profile</button>
               </>
             )}
             {userType === 'tutor' && (
               <>
                 <button onClick={() => setCurrentPage('tutor-sessions')}>My Sessions</button>
-                <button onClick={() => setCurrentPage('today-slots')}>Today's Slots</button>
-                <button onClick={() => setCurrentPage('tomorrow-slots')}>Tomorrow's Slots</button>
+                <button onClick={() => setCurrentPage('settings')}>Settings</button>
                 <button onClick={() => setCurrentPage('tutor-profile')}>Profile</button>
               </>
             )}

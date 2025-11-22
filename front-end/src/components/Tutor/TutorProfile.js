@@ -77,11 +77,15 @@ function TutorProfile({ tutorId, onNavigate, onLogout }) {
 
       {profile && (
         <div>
-          <p><strong>Name:</strong> {profile.name}</p>
-          <p><strong>Email:</strong> {profile.email}</p>
-          <p><strong>Experience:</strong> {profile.experience_years ? `${profile.experience_years} years` : 'Not specified'}</p>
-          <p><strong>Bio:</strong> {profile.bio || 'No bio provided'}</p>
-          <p><strong>Member Since:</strong> {new Date(profile.DateJoined).toLocaleDateString()}</p>
+          <div style={{ background: '#f8f9fa', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+            <h3 style={{ marginTop: 0 }}>Profile Information</h3>
+            <p style={{ fontSize: '1.1em' }}><strong>Name:</strong> {profile.name}</p>
+            <p style={{ fontSize: '1.1em' }}><strong>Email:</strong> {profile.email}</p>
+            <p style={{ fontSize: '1.1em' }}><strong>Experience:</strong> {profile.experience_years ? `${profile.experience_years} years` : 'Not specified'}</p>
+            <p style={{ fontSize: '1.1em' }}><strong>Rating:</strong> {profile.rating ? `${profile.rating}/5.0` : 'No ratings yet'}</p>
+            <p style={{ fontSize: '1.1em' }}><strong>Bio:</strong> {profile.bio || 'No bio provided'}</p>
+            <p style={{ fontSize: '1.1em' }}><strong>Member Since:</strong> {profile.DateJoined ? new Date(profile.DateJoined).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</p>
+          </div>
 
           <div style={{ marginTop: '30px' }}>
             <button 

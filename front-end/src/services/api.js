@@ -123,6 +123,11 @@ export const getTomorrowSlots = async () => {
   return response.json();
 };
 
+export const getSlotsByDate = async (date) => {
+  const response = await fetch(`${API_BASE_URL}/slots/date/${date}`);
+  return response.json();
+};
+
 // Students API calls
 export const getStudentProfile = async (studentId) => {
   const response = await fetch(`${API_BASE_URL}/students/${studentId}/profile`);

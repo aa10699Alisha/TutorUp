@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { studentSignup } from '../../services/api';
 
-function StudentSignup({ onNavigate }) {
+function StudentSignup({ onNavigate, onLogin }) {
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -26,10 +26,17 @@ function StudentSignup({ onNavigate }) {
       const result = await studentSignup(formData);
       
       if (result.success) {
-        setSuccess('Account created successfully! Please sign in.');
-        setTimeout(() => {
-          onNavigate('student-signin');
-        }, 2000);
+        setSuccess('Account created successfully! Logging you in...');
+        // Auto-login after signup
+        if (onLogin) {
+          setTimeout(() => {
+            onLogin(result.data, 'student');
+          }, 1000);
+        } else {
+          setTimeout(() => {
+            onNavigate('student-signin');
+          }, 2000);
+        }
       } else {
         setError(result.error || 'Signup failed');
       }

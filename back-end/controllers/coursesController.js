@@ -86,19 +86,26 @@ const getAvailableSlotsByCourse = async (req, res) => {
               s.EndTime,
               s.Location,
               s.Capacity,
+              s.Status,
               t.FullName AS TutorName,
-              t.TutorID
+              t.TutorID,
+              (SELECT COUNT(*) FROM Booking WHERE SlotID = s.SlotID AND Status != 'Cancelled') AS BookedCount
        FROM AvailabilitySlot s
        JOIN Tutor t ON s.TutorID = t.TutorID
-       WHERE s.CourseID = ? AND s.Status = 'Open'
+       WHERE s.CourseID = ? 
+         AND s.Status = 'Open'
+         AND CONCAT(s.Date, ' ', s.StartTime) >= NOW()
        ORDER BY s.Date, s.StartTime`,
       [courseId]
     );
 
+    // Filter out fully booked slots
+    const availableSlots = slots.filter(slot => slot.BookedCount < slot.Capacity);
+
     res.status(200).json({
       success: true,
-      count: slots.length,
-      data: slots
+      count: availableSlots.length,
+      data: availableSlots
     });
   } catch (error) {
     console.error('Get available slots error:', error);
