@@ -160,11 +160,7 @@ TutorUp/Milestones-1-3-diagrams-wireframes-and-sql-code/sqlcode/COMMANDS.sql
 
 1. Connect to the Aiven MySQL database using a MySQL client (e.g., MySQL Workbench, DBeaver, or command line):
    ```
-   Host: mysql-306eeb47-nyu-f431.i.aivencloud.com
-   Port: 26601
-   Database: defaultdb
-   User: avnadmin
-   Password: AVNS_5jd3bghbcWipFRkSJho
+   
    ```
 
 2. Run the SQL scripts from `COMMANDS.sql` as needed.
