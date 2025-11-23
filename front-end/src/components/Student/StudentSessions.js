@@ -14,16 +14,17 @@ function StudentSessions({ studentId, onNavigate }) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [reviewData, setReviewData] = useState({});
+  const [sortOption, setSortOption] = useState('date'); // 'date' (time), 'tutor', 'course'
 
   useEffect(() => {
     fetchSessions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentId]);
+  }, [studentId, sortOption]);
 
   const fetchSessions = async () => {
     try {
       const [upcomingResult, pastResult] = await Promise.all([
-        getStudentUpcomingSessions(studentId),
+        getStudentUpcomingSessions(studentId, sortOption),
         getStudentPastSessions(studentId)
       ]);
 
@@ -38,6 +39,10 @@ function StudentSessions({ studentId, onNavigate }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSortChange = (e) => {
+    setSortOption(e.target.value);
   };
 
   const handleCancelBooking = async (bookingId) => {
@@ -126,7 +131,17 @@ function StudentSessions({ studentId, onNavigate }) {
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
 
-      <h3>Upcoming Sessions</h3>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '15px', justifyContent: 'space-between' }}>
+        <h3 style={{ margin: 0 }}>Upcoming Sessions</h3>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <label style={{ fontWeight: 'bold' }}>Sort by:</label>
+          <select value={sortOption} onChange={handleSortChange} style={{ padding: '8px', borderRadius: '5px', border: '2px solid #ddd' }}>
+            <option value="date">Time</option>
+            <option value="tutor">Tutor</option>
+            <option value="course">Course</option>
+          </select>
+        </div>
+      </div>
       {upcomingSessions.length === 0 ? (
         <div className="empty-state">No upcoming sessions</div>
       ) : (
