@@ -42,7 +42,7 @@
 
 .main-nav button.active {
   background-color: rgba(255, 255, 255, 0.412);
-  border-color: #4000e2c2;
+  border-color: #ffffff;
   box-shadow: 0 0 10px rgba(143, 188, 255, 0.5);
   /* font-weight: bold; */
 }

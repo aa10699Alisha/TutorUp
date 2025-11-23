@@ -182,14 +182,18 @@ const getStudentPastSessions = async (req, res) => {
               b.Status,
               s.Date,
               s.StartTime,
+              s.EndTime,
+              s.Location,
               c.CourseName,
               t.FullName AS TutorName,
+              a.Attended,
               r.Rating,
               r.Comment
        FROM Booking b
        JOIN AvailabilitySlot s ON b.SlotID = s.SlotID
        JOIN Course c ON s.CourseID = c.CourseID
        JOIN Tutor t ON s.TutorID = t.TutorID
+       LEFT JOIN Attendance a ON b.BookingID = a.BookingID
        LEFT JOIN Review r ON b.BookingID = r.BookingID
        WHERE b.StudentID = ? AND s.Date < CURDATE()
        ORDER BY s.Date DESC, s.StartTime DESC`,
