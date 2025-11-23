@@ -92,8 +92,9 @@ export const cancelBooking = async (bookingId, studentId) => {
   return response.json();
 };
 
-export const getStudentUpcomingSessions = async (studentId) => {
-  const response = await fetch(`${API_BASE_URL}/bookings/student/${studentId}/upcoming`);
+export const getStudentUpcomingSessions = async (studentId, sort) => {
+  const param = sort ? `?sort=${encodeURIComponent(sort)}` : '';
+  const response = await fetch(`${API_BASE_URL}/bookings/student/${studentId}/upcoming${param}`);
   return response.json();
 };
 
