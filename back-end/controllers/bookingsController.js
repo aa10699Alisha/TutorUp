@@ -19,7 +19,7 @@ const createBooking = async (req, res) => {
     // Lock the slot row to avoid race conditions when checking availability
     // Also fetch the slot date/time so we can check for overlaps
     const [slots] = await connection.query(
-      'SELECT Status, Date, StartTime, EndTime, TutorID FROM AvailabilitySlot WHERE SlotID = ? FOR UPDATE',
+      'SELECT Status, Date, StartTime, EndTime, TutorID, CourseID FROM AvailabilitySlot WHERE SlotID = ? FOR UPDATE',
       [slotId]
     );
 
@@ -49,6 +49,7 @@ const createBooking = async (req, res) => {
     const slotStart = slot.StartTime; // assuming time string 'HH:MM:SS'
     const slotEnd = slot.EndTime;
   const slotTutorId = slot.TutorID;
+  const slotCourseId = slot.CourseID;
 
     // Acquire a named lock for this student (timeout 5 seconds)
     const lockName = `student_booking_${studentId}`;
@@ -85,23 +86,25 @@ const createBooking = async (req, res) => {
 
       // Prevent booking another session with the same tutor on the same day
       if (slotTutorId) {
-        const [sameTutor] = await connection.query(
+        // Only block if the existing confirmed booking is with the same tutor AND same course on the same date
+        const [sameTutorSameCourse] = await connection.query(
           `SELECT b.BookingID
            FROM Booking b
            JOIN AvailabilitySlot s ON b.SlotID = s.SlotID
            WHERE b.StudentID = ?
              AND b.Status = 'Confirmed'
              AND s.TutorID = ?
-             AND s.Date = ?`,
-          [studentId, slotTutorId, slotDate]
+             AND s.Date = ?
+             AND s.CourseID = ?`,
+          [studentId, slotTutorId, slotDate, slotCourseId]
         );
 
-        if (sameTutor.length > 0) {
+        if (sameTutorSameCourse.length > 0) {
           await connection.query('SELECT RELEASE_LOCK(?)', [lockName]);
           await connection.rollback();
           return res.status(409).json({
             success: false,
-            error: 'You already have a confirmed session with this tutor on the same day'
+            error: 'You already have a confirmed session with this tutor for the same course on the same day'
           });
         }
       }
