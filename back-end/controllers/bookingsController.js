@@ -331,6 +331,7 @@ const getTutorPastSessions = async (req, res) => {
           b.BookingID,
           s.Date,
           s.StartTime,
+          s.EndTime,
           s.Location,
           c.CourseName,
           st.FullName AS StudentName,

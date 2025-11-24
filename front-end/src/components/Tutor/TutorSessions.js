@@ -13,11 +13,10 @@ function TutorSessions({ tutorId, onNavigate }) {
 
   const sortParamMap = {
     'Time': 'time',
-    'Course': 'course',
-    'Status': 'status'
+    'Course': 'course'
   };
 
-  const pastSortOptions = ['Recent', 'Oldest', 'Course', 'Student'];
+  const pastSortOptions = ['Recent', 'Oldest', 'Course'];
 
   useEffect(() => {
     fetchSessions();
@@ -30,6 +29,20 @@ function TutorSessions({ tutorId, onNavigate }) {
         getTutorUpcomingSessions(tutorId, sortParamMap[sortBy]),
         getTutorPastSessions(tutorId)
       ]);
+
+      if (upcomingResult.success) {
+        setUpcomingSessions(upcomingResult.data);
+      }
+      if (pastResult.success) {
+        setPastSessions(pastResult.data);
+      }
+    } catch (err) {
+      setError('Server error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSelectSort = (label) => {
     setSortBy(label);
     setShowSortMenu(false);
@@ -57,24 +70,9 @@ function TutorSessions({ tutorId, onNavigate }) {
       return dateA - dateB;
     } else if (pastSortBy === 'Course') {
       return a.CourseName.localeCompare(b.CourseName);
-    } else if (pastSortBy === 'Student') {
-      return (a.StudentName || '').localeCompare(b.StudentName || '');
     }
     return 0;
   });
-
-      if (upcomingResult.success) {
-        setUpcomingSessions(upcomingResult.data);
-      }
-      if (pastResult.success) {
-        setPastSessions(pastResult.data);
-      }
-    } catch (err) {
-      setError('Server error. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return <div className="loading">Loading sessions...</div>;
@@ -100,7 +98,7 @@ function TutorSessions({ tutorId, onNavigate }) {
           </button>
           {showSortMenu && (
             <div className="feed-main-sort-menu">
-              {['Time','Course','Status'].map(opt => (
+              {['Time','Course'].map(opt => (
                 <div
                   key={opt}
                   className="feed-main-sort-option"
