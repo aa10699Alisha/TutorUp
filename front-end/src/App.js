@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
 
 // Auth Components
@@ -28,6 +28,70 @@ function App() {
   const [userType, setUserType] = useState(null);
   const [selectedMajor, setSelectedMajor] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const drawerRef = useRef(null);
+  const hamburgerRef = useRef(null);
+  const [overlayMounted, setOverlayMounted] = useState(false);
+
+  // Close mobile drawer when clicking outside (in addition to overlay)
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const handleOutside = (e) => {
+      if (
+        drawerRef.current &&
+        !drawerRef.current.contains(e.target) &&
+        hamburgerRef.current &&
+        !hamburgerRef.current.contains(e.target)
+      ) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+    };
+  }, [isMobileMenuOpen]);
+
+  // Manage overlay mount for fade in/out
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      setOverlayMounted(true);
+    } else if (overlayMounted) {
+      const t = setTimeout(() => setOverlayMounted(false), 350);
+      return () => clearTimeout(t);
+    }
+  }, [isMobileMenuOpen, overlayMounted]);
+
+  // Lock body scroll & provide blocked scroll feedback animation
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.classList.add('no-scroll');
+    } else {
+      document.body.classList.remove('no-scroll');
+    }
+  }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const blockedScroll = (e) => {
+      if (drawerRef.current && drawerRef.current.contains(e.target)) return; // allow scroll inside drawer (if scrollable)
+      e.preventDefault();
+      if (drawerRef.current) {
+        drawerRef.current.classList.add('block-feedback');
+        setTimeout(() => {
+          drawerRef.current && drawerRef.current.classList.remove('block-feedback');
+        }, 400);
+      }
+    };
+    document.addEventListener('wheel', blockedScroll, { passive: false });
+    document.addEventListener('touchmove', blockedScroll, { passive: false });
+    return () => {
+      document.removeEventListener('wheel', blockedScroll);
+      document.removeEventListener('touchmove', blockedScroll);
+    };
+  }, [isMobileMenuOpen]);
 
   const handleLogin = (userData, type) => {
     setUser(userData);
@@ -36,11 +100,13 @@ function App() {
   };
 
   const handleLogout = () => {
-    setUser(null);
-    setUserType(null);
-    setCurrentPage('welcome');
-    setSelectedMajor(null);
-    setSelectedCourse(null);
+    if (window.confirm('Are you sure you want to logout?')) {
+      setUser(null);
+      setUserType(null);
+      setCurrentPage('welcome');
+      setSelectedMajor(null);
+      setSelectedCourse(null);
+    }
   };
 
   const renderPage = () => {
@@ -87,61 +153,175 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>TutorUp</h1>
+        <h1 className="desktop-title">TutorUp</h1>
+        {/* Mobile Topbar always shows brand title; hamburger only if authenticated */}
+        <div className="mobile-topbar mobile-only">
+          {user && (
+            <button
+              type="button"
+              className={`hamburger-button ${isMobileMenuOpen ? 'open' : ''}`}
+              aria-label={isMobileMenuOpen ? 'Close navigation' : 'Open navigation'}
+              aria-expanded={isMobileMenuOpen}
+              onClick={() => setIsMobileMenuOpen((v) => !v)}
+              ref={hamburgerRef}
+            >
+              <svg className="hamburger-icon" viewBox="0 0 24 18" aria-hidden="true" focusable="false">
+                <line x1="2" y1="3" x2="22" y2="3" />
+                <line x1="2" y1="9" x2="22" y2="9" />
+                <line x1="2" y1="15" x2="22" y2="15" />
+              </svg>
+            </button>
+          )}
+          <span className="mobile-topbar-title">TutorUp</span>
+        </div>
         {user && (
-          <nav className="main-nav">
-            {userType === 'student' && (
-              <>
-                <button 
-                  onClick={() => setCurrentPage('majors')}
-                  className={['majors', 'courses', 'course-detail'].includes(currentPage) ? 'active' : ''}
-                >
-                  Browse Courses
-                </button>
-                <button 
-                  onClick={() => setCurrentPage('student-sessions')}
-                  className={currentPage === 'student-sessions' ? 'active' : ''}
-                >
-                  My Sessions
-                </button>
-                <button 
-                  onClick={() => setCurrentPage('settings')}
-                  className={currentPage === 'settings' ? 'active' : ''}
-                >
-                  Settings
-                </button>
-                <button 
-                  onClick={() => setCurrentPage('student-profile')}
-                  className={currentPage === 'student-profile' ? 'active' : ''}
-                >
-                  Profile
-                </button>
-              </>
+          <>
+            {/* Desktop Navigation */}
+            <nav className="main-nav desktop-only">
+              {userType === 'student' && (
+                <>
+                  <button 
+                    onClick={() => setCurrentPage('majors')}
+                    className={['majors', 'courses', 'course-detail'].includes(currentPage) ? 'active' : ''}
+                  >
+                    Browse Courses
+                  </button>
+                  <button 
+                    onClick={() => setCurrentPage('student-sessions')}
+                    className={currentPage === 'student-sessions' ? 'active' : ''}
+                  >
+                    My Sessions
+                  </button>
+                  <button 
+                    onClick={() => setCurrentPage('settings')}
+                    className={currentPage === 'settings' ? 'active' : ''}
+                  >
+                    Settings
+                  </button>
+                  <button 
+                    onClick={() => setCurrentPage('student-profile')}
+                    className={currentPage === 'student-profile' ? 'active' : ''}
+                  >
+                    Profile
+                  </button>
+                </>
+              )}
+              {userType === 'tutor' && (
+                <>
+                  <button 
+                    onClick={() => setCurrentPage('tutor-sessions')}
+                    className={currentPage === 'tutor-sessions' ? 'active' : ''}
+                  >
+                    My Sessions
+                  </button>
+                  <button 
+                    onClick={() => setCurrentPage('settings')}
+                    className={currentPage === 'settings' ? 'active' : ''}
+                  >
+                    Settings
+                  </button>
+                  <button 
+                    onClick={() => setCurrentPage('tutor-profile')}
+                    className={currentPage === 'tutor-profile' ? 'active' : ''}
+                  >
+                    Profile
+                  </button>
+                </>
+              )}
+              <button className="logout-btn" onClick={handleLogout}>Logout</button>
+            </nav>
+
+            {/* Mobile Drawer */}
+            <div ref={drawerRef} className={`mobile-drawer mobile-only ${isMobileMenuOpen ? 'open' : ''}`}>
+              {userType === 'student' && (
+                <>
+                  <button
+                    className={`mobile-drawer-item ${['majors', 'courses', 'course-detail'].includes(currentPage) ? 'active' : ''}`}
+                    onClick={() => {
+                      setCurrentPage('majors');
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    Browse Courses
+                  </button>
+                  <button
+                    className={`mobile-drawer-item ${currentPage === 'student-sessions' ? 'active' : ''}`}
+                    onClick={() => {
+                      setCurrentPage('student-sessions');
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    My Sessions
+                  </button>
+                  <button
+                    className={`mobile-drawer-item ${currentPage === 'settings' ? 'active' : ''}`}
+                    onClick={() => {
+                      setCurrentPage('settings');
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    Settings
+                  </button>
+                  <button
+                    className={`mobile-drawer-item ${currentPage === 'student-profile' ? 'active' : ''}`}
+                    onClick={() => {
+                      setCurrentPage('student-profile');
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    Profile
+                  </button>
+                </>
+              )}
+              {userType === 'tutor' && (
+                <>
+                  <button
+                    className={`mobile-drawer-item ${currentPage === 'tutor-sessions' ? 'active' : ''}`}
+                    onClick={() => {
+                      setCurrentPage('tutor-sessions');
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    My Sessions
+                  </button>
+                  <button
+                    className={`mobile-drawer-item ${currentPage === 'settings' ? 'active' : ''}`}
+                    onClick={() => {
+                      setCurrentPage('settings');
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    Settings
+                  </button>
+                  <button
+                    className={`mobile-drawer-item ${currentPage === 'tutor-profile' ? 'active' : ''}`}
+                    onClick={() => {
+                      setCurrentPage('tutor-profile');
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    Profile
+                  </button>
+                </>
+              )}
+              <button
+                className="mobile-drawer-item"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  handleLogout();
+                }}
+              >
+                Logout
+              </button>
+            </div>
+            {overlayMounted && (
+              <div
+                className={`mobile-drawer-overlay mobile-only ${isMobileMenuOpen ? 'open' : 'closing'}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+                aria-hidden
+              />
             )}
-            {userType === 'tutor' && (
-              <>
-                <button 
-                  onClick={() => setCurrentPage('tutor-sessions')}
-                  className={currentPage === 'tutor-sessions' ? 'active' : ''}
-                >
-                  My Sessions
-                </button>
-                <button 
-                  onClick={() => setCurrentPage('settings')}
-                  className={currentPage === 'settings' ? 'active' : ''}
-                >
-                  Settings
-                </button>
-                <button 
-                  onClick={() => setCurrentPage('tutor-profile')}
-                  className={currentPage === 'tutor-profile' ? 'active' : ''}
-                >
-                  Profile
-                </button>
-              </>
-            )}
-            <button onClick={handleLogout}>Logout</button>
-          </nav>
+          </>
         )}
       </header>
       <main className="App-main">

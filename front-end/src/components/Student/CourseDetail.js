@@ -129,11 +129,17 @@ function CourseDetail({ course, studentId, onNavigate }) {
       <h3 style={{ marginTop: '30px' }}>Available Tutoring Slots</h3>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-        <button className="btn btn-secondary" onClick={goToPreviousDay}>← Previous Day</button>
+        <button className="btn btn-secondary date-nav-button" onClick={goToPreviousDay}>
+          <span className="desktop-only">← Previous Day</span>
+          <span className="mobile-only">←</span>
+        </button>
         <div style={{ flex: 1, textAlign: 'center' }}>
           <h4 style={{ margin: 0 }}>{formatDate(currentDate)}</h4>
         </div>
-        <button className="btn btn-secondary" onClick={goToNextDay}>Next Day →</button>
+        <button className="btn btn-secondary date-nav-button" onClick={goToNextDay}>
+          <span className="desktop-only">Next Day →</span>
+          <span className="mobile-only">→</span>
+        </button>
       </div>
 
       <div style={{ textAlign: 'center', marginBottom: '20px' }}>
