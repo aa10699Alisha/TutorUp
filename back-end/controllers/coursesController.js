@@ -20,6 +20,29 @@ const getAllMajors = async (req, res) => {
   }
 };
 
+const getAllCoursesWithMajors = async (req, res) => {
+  try {
+    const [courses] = await pool.query(
+      `SELECT c.CourseID, c.CourseCode, c.CourseName, c.MajorID, m.MajorName
+       FROM Course c
+       JOIN Major m ON c.MajorID = m.MajorID
+       ORDER BY c.CourseName`
+    );
+
+    res.status(200).json({
+      success: true,
+      count: courses.length,
+      data: courses
+    });
+  } catch (error) {
+    console.error('Get all courses error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Server error while fetching courses'
+    });
+  }
+};
+
 const getCoursesByMajor = async (req, res) => {
   try {
     const { majorId } = req.params;
@@ -118,6 +141,7 @@ const getAvailableSlotsByCourse = async (req, res) => {
 
 module.exports = {
   getAllMajors,
+  getAllCoursesWithMajors,
   getCoursesByMajor,
   getCourseById,
   getAvailableSlotsByCourse

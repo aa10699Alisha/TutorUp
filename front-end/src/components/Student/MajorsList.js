@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { getAllMajors } from '../../services/api';
+import { getAllMajors, getAllCoursesWithMajors } from '../../services/api';
 // Map major names or IDs to image filenames
 const majorImages = {
   'Biology': 'Biology.jpg',
@@ -24,21 +24,30 @@ const fallbackImage = '/course-images/default.jpg'; // Add a default.jpg image i
 
 function MajorsList({ onNavigate, onSelectMajor }) {
   const [majors, setMajors] = useState([]);
+  const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    fetchMajors();
+    fetchData();
   }, []);
 
-  const fetchMajors = async () => {
+  const fetchData = async () => {
     try {
-      const result = await getAllMajors();
+      const [majorsResult, coursesResult] = await Promise.all([
+        getAllMajors(),
+        getAllCoursesWithMajors()
+      ]);
       
-      if (result.success) {
-        setMajors(result.data);
+      if (majorsResult.success) {
+        setMajors(majorsResult.data);
       } else {
-        setError(result.error || 'Failed to load majors');
+        setError(majorsResult.error || 'Failed to load majors');
+      }
+
+      if (coursesResult.success) {
+        setCourses(coursesResult.data);
       }
     } catch (err) {
       setError('Server error. Please try again.');
@@ -56,17 +65,40 @@ function MajorsList({ onNavigate, onSelectMajor }) {
     return <div className="loading">Loading majors...</div>;
   }
 
+  // Filter majors based on search term - match major name OR course names
+  const filteredMajors = majors.filter(major => {
+    // Check if major name matches
+    if (major.MajorName.toLowerCase().includes(searchTerm.toLowerCase())) {
+      return true;
+    }
+    // Check if any course in this major matches
+    const majorCourses = courses.filter(course => course.MajorID === major.MajorID);
+    return majorCourses.some(course => 
+      course.CourseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      course.CourseCode.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+
   return (
     <div className="page-container">
       <h2>Browse by Major</h2>
       
       {error && <div className="error-message">{error}</div>}
 
-      {majors.length === 0 ? (
-        <div className="empty-state">No majors available</div>
+      <input
+        type="text"
+        placeholder="Search majors or courses..."
+        className="feed-main-search-input"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        style={{ marginBottom: '20px' }}
+      />
+
+      {filteredMajors.length === 0 ? (
+        <div className="empty-state">{searchTerm ? 'No majors match your search' : 'No majors available'}</div>
       ) : (
         <div className="card-grid">
-          {majors.map((major) => {
+          {filteredMajors.map((major) => {
             console.log('MajorName:', major.MajorName);
             let imgFile = majorImages[major.MajorName]
               || majorImages[major.MajorName?.toLowerCase()]

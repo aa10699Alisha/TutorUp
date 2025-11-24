@@ -43,6 +43,11 @@ export const getAllMajors = async () => {
   return response.json();
 };
 
+export const getAllCoursesWithMajors = async () => {
+  const response = await fetch(`${API_BASE_URL}/courses/all-courses`);
+  return response.json();
+};
+
 export const getCoursesByMajor = async (majorId) => {
   const response = await fetch(`${API_BASE_URL}/courses/by-major/${majorId}`);
   return response.json();

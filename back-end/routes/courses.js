@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getAllMajors,
+  getAllCoursesWithMajors,
   getCoursesByMajor,
   getCourseById,
   getAvailableSlotsByCourse
@@ -9,6 +10,7 @@ const {
 
 // Course routes
 router.get('/majors', getAllMajors);
+router.get('/all-courses', getAllCoursesWithMajors);
 router.get('/by-major/:majorId', getCoursesByMajor);
 router.get('/:courseId', getCourseById);
 router.get('/:courseId/slots', getAvailableSlotsByCourse);

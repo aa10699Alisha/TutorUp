@@ -320,6 +320,15 @@
 }
 
 .feed-main-sort-option:hover {
-  background-color: #f5f5f5;
+  background-color: #f0f0f0;
+}
+
+.feed-main-search-input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 15px;
+  box-sizing: border-box;
 }
 
