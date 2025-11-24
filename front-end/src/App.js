@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
 
 // Auth Components
@@ -29,6 +29,29 @@ function App() {
   const [selectedMajor, setSelectedMajor] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const drawerRef = useRef(null);
+  const hamburgerRef = useRef(null);
+
+  // Close mobile drawer when clicking outside (in addition to overlay)
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const handleOutside = (e) => {
+      if (
+        drawerRef.current &&
+        !drawerRef.current.contains(e.target) &&
+        hamburgerRef.current &&
+        !hamburgerRef.current.contains(e.target)
+      ) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+    };
+  }, [isMobileMenuOpen]);
 
   const handleLogin = (userData, type) => {
     setUser(userData);
@@ -90,7 +113,7 @@ function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>TutorUp</h1>
+        <h1 className="desktop-title">TutorUp</h1>
         {user && (
           <>
             {/* Desktop Navigation */}
@@ -153,18 +176,22 @@ function App() {
               <button
                 type="button"
                 className="hamburger-button"
-                aria-label="Open navigation"
+                aria-label={isMobileMenuOpen ? 'Close navigation' : 'Open navigation'}
                 aria-expanded={isMobileMenuOpen}
                 onClick={() => setIsMobileMenuOpen((v) => !v)}
+                ref={hamburgerRef}
               >
-                <span className="hamburger-bar" />
-                <span className="hamburger-bar" />
-                <span className="hamburger-bar" />
+                <svg className="hamburger-icon" viewBox="0 0 24 18" aria-hidden="true" focusable="false">
+                  <line x1="2" y1="3" x2="22" y2="3" />
+                  <line x1="2" y1="9" x2="22" y2="9" />
+                  <line x1="2" y1="15" x2="22" y2="15" />
+                </svg>
               </button>
+              <span className="mobile-topbar-title">TutorUp</span>
             </div>
 
             {/* Mobile Drawer */}
-            <div className={`mobile-drawer ${isMobileMenuOpen ? 'open' : ''}`}>
+            <div ref={drawerRef} className={`mobile-drawer ${isMobileMenuOpen ? 'open' : ''}`}>
               {userType === 'student' && (
                 <>
                   <button
