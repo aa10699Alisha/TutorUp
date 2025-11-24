@@ -17,6 +17,7 @@ function CoursesList({ major, onNavigate, onSelectCourse }) {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (major) {
@@ -50,6 +51,13 @@ function CoursesList({ major, onNavigate, onSelectCourse }) {
     return <div className="loading">Loading courses...</div>;
   }
 
+  // Filter courses based on search term
+  const filteredCourses = courses.filter(course =>
+    course.CourseName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.CourseCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (course.Description && course.Description.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   return (
     <div className="page-container">
       <h2>{major?.MajorName} Courses</h2>
@@ -60,11 +68,20 @@ function CoursesList({ major, onNavigate, onSelectCourse }) {
 
       {error && <div className="error-message">{error}</div>}
 
-      {courses.length === 0 ? (
-        <div className="empty-state">No courses available for this major</div>
+      <input
+        type="text"
+        placeholder="Search courses..."
+        className="feed-main-search-input"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        style={{ marginTop: '20px', marginBottom: '20px' }}
+      />
+
+      {filteredCourses.length === 0 ? (
+        <div className="empty-state">{searchTerm ? 'No courses match your search' : 'No courses available for this major'}</div>
       ) : (
         <div className="card-grid">
-          {courses.map((course) => (
+          {filteredCourses.map((course) => (
             <div
               key={course.CourseID}
               className="card"
