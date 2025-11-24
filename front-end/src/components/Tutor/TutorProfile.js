@@ -84,7 +84,6 @@ function TutorProfile({ tutorId, onNavigate, onLogout }) {
             <p className="profile-info"><strong>Experience:</strong> {profile.experience_years ? `${profile.experience_years} years` : 'Not specified'}</p>
             <p className="profile-info"><strong>Rating:</strong> {profile.rating ? `${profile.rating}/5.0` : 'No ratings yet'}</p>
             <p className="profile-info"><strong>Bio:</strong> {profile.bio || 'No bio provided'}</p>
-            <p className="profile-info"><strong>Member Since:</strong> {profile.DateJoined ? new Date(profile.DateJoined).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</p>
           </div>
 
           <div style={{ marginTop: '30px' }}>

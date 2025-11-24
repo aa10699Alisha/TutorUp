@@ -38,9 +38,9 @@ const getTutorProfile = async (req, res) => {
     const [tutors] = await pool.query(
       `SELECT t.FullName AS name,
               t.Email AS email,
-              t.Bio,
-              t.ExperienceYears,
-              t.RatingAverage
+              t.Bio AS bio,
+              t.ExperienceYears AS experience_years,
+              t.RatingAverage AS rating
        FROM Tutor t
        WHERE t.TutorID = ?`,
       [tutorId]
