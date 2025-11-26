@@ -34,19 +34,32 @@ function StudentSessions({ studentId, onNavigate }) {
 
   const fetchSessions = async () => {
     try {
+      // Get local datetime in 'YYYY-MM-DD HH:MM:SS' format
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+      const localDateTime = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+      console.log('[StudentSessions] Fetching upcoming and past sessions', { studentId, sort: sortParamMap[sortBy], localDateTime });
       const [upcomingResult, pastResult] = await Promise.all([
-        getStudentUpcomingSessions(studentId, sortParamMap[sortBy]),
+        getStudentUpcomingSessions(studentId, sortParamMap[sortBy], localDateTime),
         getStudentPastSessions(studentId)
       ]);
 
+      console.log('[StudentSessions] Upcoming result:', upcomingResult);
+      console.log('[StudentSessions] Past result:', pastResult);
+
       if (upcomingResult.success) {
         setUpcomingSessions(upcomingResult.data);
+      } else {
+        console.error('[StudentSessions] Upcoming error:', upcomingResult.error);
       }
       if (pastResult.success) {
         setPastSessions(pastResult.data);
+      } else {
+        console.error('[StudentSessions] Past error:', pastResult.error);
       }
     } catch (err) {
       setError('Server error. Please try again.');
+      console.error('[StudentSessions] Fetch error:', err);
     } finally {
       setLoading(false);
     }
@@ -205,7 +218,8 @@ function StudentSessions({ studentId, onNavigate }) {
           {upcomingSessions.map((session) => (
             <div key={session.BookingID} className="list-item">
               <h4>{session.CourseName}</h4>
-              <p><strong>Date:</strong> {new Date(session.Date).toLocaleDateString()}</p>
+              {/* Display date as YYYY-MM-DD to avoid timezone shift */}
+              <p><strong>Date:</strong> {session.Date}</p>
               <p><strong>Time:</strong> {session.StartTime} - {session.EndTime}</p>
               <p><strong>Tutor:</strong> {session.TutorName}</p>
               <p><strong>Location:</strong> {session.Location}</p>
@@ -257,28 +271,14 @@ function StudentSessions({ studentId, onNavigate }) {
           {sortedPastSessions.map((session) => (
             <div key={session.BookingID} className="list-item">
               <h4>{session.CourseName}</h4>
-              <p><strong>Date:</strong> {new Date(session.Date).toLocaleDateString()}</p>
+              {/* Display date as YYYY-MM-DD to avoid timezone shift */}
+              <p><strong>Date:</strong> {session.Date}</p>
               <p><strong>Time:</strong> {session.StartTime} - {session.EndTime}</p>
               <p><strong>Tutor:</strong> {session.TutorName}</p>
               <p><strong>Location:</strong> {session.Location}</p>
               <p><strong>Attended:</strong> {session.Attended || 'Not marked'}</p>
               
-              {session.Attended === null && (
-                <div className="session-actions">
-                  <button 
-                    className="btn" 
-                    onClick={() => handleMarkAttendance(session.BookingID, 'Yes')}
-                  >
-                    Mark as Attended
-                  </button>
-                  <button 
-                    className="btn btn-secondary" 
-                    onClick={() => handleMarkAttendance(session.BookingID, 'No')}
-                  >
-                    Mark as Not Attended
-                  </button>
-                </div>
-              )}
+              {/* Attendance marking is tutor-only. Students only see status. */}
 
               {session.Attended === 'Yes' && !session.Rating && (
                 <div style={{ marginTop: '15px' }}>

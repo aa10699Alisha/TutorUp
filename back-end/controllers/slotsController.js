@@ -71,9 +71,9 @@ const getTomorrowSlots = async (req, res) => {
 const getSlotsByDate = async (req, res) => {
   try {
     const { date } = req.params;
-
-    const [slots] = await pool.query(
-      `SELECT 
+    const futureOnly = req.query.futureOnly === 'true';
+    const localTime = req.query.localTime; // Expect format 'HH:MM:SS'
+    const baseQuery = `SELECT 
           s.SlotID,
           s.Date,
           s.StartTime,
@@ -87,14 +87,20 @@ const getSlotsByDate = async (req, res) => {
        FROM AvailabilitySlot s
        JOIN Course c ON s.CourseID = c.CourseID
        JOIN Tutor t ON s.TutorID = t.TutorID
-       WHERE s.Date = ?
-         AND CONCAT(s.Date, ' ', s.StartTime) >= NOW()
-         AND s.Status = 'Open'
-       ORDER BY s.StartTime`,
-      [date]
-    );
+       WHERE s.Date = ?\n`;
 
-    // Filter out fully booked slots
+    let fullQuery;
+    let queryParams = [date];
+    // Always filter by localTime if futureOnly and localTime are provided
+    if (futureOnly && localTime) {
+      fullQuery = baseQuery + ` AND s.StartTime > ? AND s.Status = 'Open' ORDER BY s.StartTime`;
+      queryParams.push(localTime);
+    } else {
+      fullQuery = baseQuery + ` AND s.Status = 'Open' ORDER BY s.StartTime`;
+    }
+
+    const [slots] = await pool.query(fullQuery, queryParams);
+
     const availableSlots = slots.filter(slot => slot.BookedCount < slot.Capacity);
 
     res.status(200).json({

@@ -26,9 +26,31 @@ function CourseDetail({ course, studentId, onNavigate }) {
   const fetchSlots = async () => {
     setLoading(true);
     try {
-      const dateStr = currentDate.toISOString().split('T')[0];
-      const result = await getSlotsByDate(dateStr);
-      
+      // Build date string in local time (YYYY-MM-DD) to avoid UTC shift from toISOString()
+      const dateStr = [
+        currentDate.getFullYear(),
+        String(currentDate.getMonth() + 1).padStart(2, '0'),
+        String(currentDate.getDate()).padStart(2, '0')
+      ].join('-');
+
+      // If user requested today's date, ask backend for future-only slots and pass local time
+      const todayLocal = new Date();
+      const todayStr = [
+        todayLocal.getFullYear(),
+        String(todayLocal.getMonth() + 1).padStart(2, '0'),
+        String(todayLocal.getDate()).padStart(2, '0')
+      ].join('-');
+
+      const futureOnly = dateStr === todayStr;
+      let options = { futureOnly };
+      if (futureOnly) {
+        // Format local time as HH:MM:SS
+        const pad = n => String(n).padStart(2, '0');
+        const localTime = `${pad(todayLocal.getHours())}:${pad(todayLocal.getMinutes())}:${pad(todayLocal.getSeconds())}`;
+        options.localTime = localTime;
+      }
+      const result = await getSlotsByDate(dateStr, options);
+
       if (result.success) {
         // Filter slots for this specific course
         const courseSlots = result.data.filter(slot => slot.CourseName === course.CourseName);
@@ -86,35 +108,30 @@ function CourseDetail({ course, studentId, onNavigate }) {
         setTimeout(() => {
           onNavigate('student-sessions');
         }, 2000);
+      } else if (result.error && result.error.toLowerCase().includes('overlap')) {
+        setError('You already have a confirmed booking that overlaps this time.');
+      } else if (result.error && result.error.toLowerCase().includes('same course more than once')) {
+        setError('You cannot book the same course more than once on one day.');
+      } else if (result.error && result.error.toLowerCase().includes('same tutor') && result.error.toLowerCase().includes('same course')) {
+        setError('You cannot book a session with the same tutor for the same course again on the same day.');
+      } else if (result.error && (result.error.toLowerCase().includes('already') || result.error?.toLowerCase().includes('twice'))) {
+        setError('You have already booked this session.');
       } else {
         setError(result.error || 'Booking failed');
       }
     } catch (err) {
-      setError('Server error. Please try again.');
+      // If backend returns 409, show user-friendly message
+      if (err && err.status === 409) {
+        setError('You have already booked this session.');
+      } else {
+        setError('Server error. Please try again.');
+      }
       console.error('Booking error:', err);
     }
   };
 
   return (
     <div className="page-container">
-      <img
-        src={
-          course?.image
-            ? `/course-images/${course.image}`
-            : courseImages[course?.CourseCode]
-              ? `/course-images/${courseImages[course.CourseCode]}`
-              : undefined
-        }
-        alt={course?.CourseName}
-        style={{
-          width: '100%',
-          maxHeight: '220px',
-          objectFit: 'cover',
-          borderRadius: '8px',
-          marginBottom: '18px',
-          display: (course?.image || courseImages[course?.CourseCode]) ? 'block' : 'none'
-        }}
-      />
       <h2>{course?.CourseName}</h2>
       <p><strong>Course Code:</strong> {course?.CourseCode}</p>
       {course?.Description && <p>{course.Description}</p>}

@@ -2,6 +2,26 @@ import React, { useState, useEffect } from "react";
 import { getTutorUpcomingSessions, getTutorPastSessions } from "../../services/api";
 
 function TutorSessions({ tutorId, onNavigate }) {
+  // Handle attendance marking by tutor
+  const { markAttendanceAsTutor } = require('../../services/api');
+  const handleTutorMarkAttendance = async (studentId, slotId, attendedChecked) => {
+    console.log('DEBUG FRONTEND: Sending to backend:', { studentId, slotId, attended: attendedChecked ? 'Yes' : 'No' });
+    try {
+      const result = await markAttendanceAsTutor(studentId, slotId, attendedChecked ? 'Yes' : 'No');
+      if (result.success) {
+        setPastSessions(prev => prev.map(session => {
+          if (session.SlotID === slotId && session.StudentID === studentId) {
+            return { ...session, Attended: attendedChecked ? 'Yes' : 'No' };
+          }
+          return session;
+        }));
+      } else {
+        setError(result.error || 'Failed to update attendance.');
+      }
+    } catch (err) {
+      setError('Failed to update attendance.');
+    }
+  };
   const [upcomingSessions, setUpcomingSessions] = useState([]);
   const [pastSessions, setPastSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -75,7 +95,7 @@ function TutorSessions({ tutorId, onNavigate }) {
     return 0;
   });
 
-  // 🔹 Group upcoming sessions by SlotID (same slot = one card) and merge students
+  // 🔹 Group UPCOMING sessions by SlotID (or date+time) and merge students
   const groupedUpcomingSessions = Object.values(
     upcomingSessions.reduce((acc, session) => {
       const groupKey =
@@ -85,13 +105,13 @@ function TutorSessions({ tutorId, onNavigate }) {
       if (!acc[groupKey]) {
         acc[groupKey] = {
           ...session,
-          _students: [], // we'll store { id, name } here
+          _students: [], // { id, name }
         };
       }
 
       const tmpStudents = [];
 
-      // Case 1: backend already sends comma-separated StudentNames / StudentIDs
+      // Case 1: backend sends comma-separated StudentNames / StudentIDs
       if (session.StudentNames && session.StudentNames.trim() !== "") {
         const names = session.StudentNames.split(", ");
         const ids = session.StudentIDs ? session.StudentIDs.split("||") : [];
@@ -100,7 +120,7 @@ function TutorSessions({ tutorId, onNavigate }) {
           tmpStudents.push({ id, name });
         });
       }
-      // Case 2: one row per student with StudentName / StudentID
+      // Case 2: one row per student
       else if (session.StudentName && session.StudentName.trim() !== "") {
         const id =
           session.StudentID ||
@@ -109,7 +129,67 @@ function TutorSessions({ tutorId, onNavigate }) {
         tmpStudents.push({ id, name: session.StudentName });
       }
 
-      // Add unique students into the group
+      tmpStudents.forEach((stu) => {
+        const already = acc[groupKey]._students.some(
+          (s) => s.id === stu.id && s.name === stu.name
+        );
+        if (!already) {
+          acc[groupKey]._students.push(stu);
+        }
+      });
+
+      return acc;
+    }, {})
+  );
+
+  // 🔹 Group PAST sessions by SlotID (or date+time) and merge students + their attendance/reviews
+  const groupedPastSessions = Object.values(
+    sortedPastSessions.reduce((acc, session) => {
+      const groupKey =
+        session.SlotID ||
+        `${session.Date}-${session.StartTime}-${session.CourseName || ""}`;
+
+      if (!acc[groupKey]) {
+        acc[groupKey] = {
+          ...session,
+          _students: [], // { id, name, attended, rating, comment }
+        };
+      }
+
+      const tmpStudents = [];
+
+      // Again handle both patterns: aggregated StudentNames or one row per student
+      if (session.StudentNames && session.StudentNames.trim() !== "") {
+        const names = session.StudentNames.split(", ");
+        const ids = session.StudentIDs ? session.StudentIDs.split("||") : [];
+        names.forEach((name, idx) => {
+          const id = ids[idx] || `${name}-${idx}`;
+          tmpStudents.push({
+            id,
+            studentId: ids[idx] || session.StudentID,
+            slotId: session.SlotID,
+            name,
+            attended: session.Attended,
+            rating: session.Rating,
+            comment: session.Comment,
+          });
+        });
+      } else if (session.StudentName && session.StudentName.trim() !== "") {
+        const id =
+          session.StudentID ||
+          session.StudentEmail ||
+          session.StudentName;
+        tmpStudents.push({
+          id,
+          studentId: session.StudentID,
+          slotId: session.SlotID,
+          name: session.StudentName,
+          attended: session.Attended,
+          rating: session.Rating,
+          comment: session.Comment,
+        });
+      }
+
       tmpStudents.forEach((stu) => {
         const already = acc[groupKey]._students.some(
           (s) => s.id === stu.id && s.name === stu.name
@@ -186,8 +266,7 @@ function TutorSessions({ tutorId, onNavigate }) {
               <div key={sessionKey} className="list-item">
                 <h4>{session.CourseName}</h4>
                 <p>
-                  <strong>Date:</strong>{" "}
-                  {new Date(session.Date).toLocaleDateString()}
+                  <strong>Date:</strong> {session.Date}
                 </p>
                 <p>
                   <strong>Time:</strong> {session.StartTime} - {session.EndTime}
@@ -260,15 +339,17 @@ function TutorSessions({ tutorId, onNavigate }) {
         </div>
       </div>
 
-      {/* Past Sessions List */}
-      {pastSessions.length === 0 ? (
+      {/* Past Sessions List (grouped by slot) */}
+      {groupedPastSessions.length === 0 ? (
         <div className="empty-state">No past sessions</div>
       ) : (
         <div className="list-container">
-          {sortedPastSessions.map((session, index) => {
-            const pastKey = `${session.BookingID || "booking"}-${
+          {groupedPastSessions.map((session, index) => {
+            const students = session._students || [];
+            const pastKey = `${session.SlotID || "booking"}-${
               session.Date
             }-${session.StartTime}-${index}`;
+
             return (
               <div key={pastKey} className="list-item">
                 <h4>{session.CourseName}</h4>
@@ -280,33 +361,60 @@ function TutorSessions({ tutorId, onNavigate }) {
                   <strong>Time:</strong> {session.StartTime} - {session.EndTime}
                 </p>
                 <p>
-                  <strong>Location:</strong> {session.Location}</p>
-                {session.StudentName && (
-                  <>
-                    <p>
-                      <strong>Student:</strong> {session.StudentName}
-                    </p>
-                    <p>
-                      <strong>Attended:</strong>{" "}
-                      {session.Attended || "Not marked"}
-                    </p>
-                  </>
-                )}
-                {session.Rating && (
-                  <div
-                    style={{
-                      marginTop: "10px",
-                      background: "#e8f5e9",
-                      padding: "10px",
-                      borderRadius: "5px",
-                    }}
-                  >
-                    <p>
-                      <strong>Student Review:</strong> {session.Rating}/5
-                    </p>
-                    {session.Comment && <p>{session.Comment}</p>}
-                  </div>
-                )}
+                  <strong>Location:</strong> {session.Location}
+                </p>
+
+                <div>
+                  <strong>Students:</strong>
+                  {students.length > 0 ? (
+                    <ul
+                      style={{
+                        margin: "6px 0 0 0",
+                        paddingLeft: 18,
+                      }}
+                    >
+                      {students.map((stu) => (
+                        <li key={stu.id}>
+                          <div>
+                            <strong>{stu.name}</strong>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <strong>Attended:</strong>{" "}
+                            <input
+                              type="checkbox"
+                              checked={stu.attended === 'Yes'}
+                              onChange={e => handleTutorMarkAttendance(
+                                stu.studentId,
+                                stu.slotId,
+                                e.target.checked
+                              )}
+                            />
+                            <span>{stu.attended === 'Yes' ? 'Yes' : stu.attended === 'No' ? 'No' : 'Not marked'}</span>
+                          </div>
+                          {stu.rating && (
+                            <div
+                              style={{
+                                marginTop: "4px",
+                                background: "#e8f5e9",
+                                padding: "6px",
+                                borderRadius: "4px",
+                              }}
+                            >
+                              <strong>Review:</strong> {stu.rating}/5
+                              {stu.comment && (
+                                <span> – {stu.comment}</span>
+                              )}
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span style={{ marginLeft: 8 }}>
+                      No students recorded
+                    </span>
+                  )}
+                </div>
               </div>
             );
           })}

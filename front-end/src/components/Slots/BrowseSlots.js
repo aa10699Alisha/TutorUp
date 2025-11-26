@@ -15,9 +15,30 @@ function BrowseSlots({ onNavigate }) {
   const fetchSlots = async () => {
     setLoading(true);
     try {
-      const dateStr = currentDate.toISOString().split('T')[0];
-      const result = await getSlotsByDate(dateStr);
-      
+      const dateStr = [
+        currentDate.getFullYear(),
+        String(currentDate.getMonth() + 1).padStart(2, '0'),
+        String(currentDate.getDate()).padStart(2, '0')
+      ].join('-');
+
+      // If the requested date is the user's local today, ask backend for future-only slots and pass local time
+      const todayLocal = new Date();
+      const todayStr = [
+        todayLocal.getFullYear(),
+        String(todayLocal.getMonth() + 1).padStart(2, '0'),
+        String(todayLocal.getDate()).padStart(2, '0')
+      ].join('-');
+
+      const futureOnly = dateStr === todayStr;
+      let options = { futureOnly };
+      if (futureOnly) {
+        // Format local time as HH:MM:SS
+        const pad = n => String(n).padStart(2, '0');
+        const localTime = `${pad(todayLocal.getHours())}:${pad(todayLocal.getMinutes())}:${pad(todayLocal.getSeconds())}`;
+        options.localTime = localTime;
+      }
+      const result = await getSlotsByDate(dateStr, options);
+
       if (result.success) {
         setSlots(result.data);
       } else {

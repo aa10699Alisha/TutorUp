@@ -61,7 +61,50 @@ const createBooking = async (req, res) => {
     }
 
     try {
-      // Find any confirmed bookings for this student that overlap the same date/time
+      // 1. Check for duplicate booking (same slot) FIRST
+      const [existingBookings] = await connection.query(
+        'SELECT BookingID, Status FROM Booking WHERE StudentID = ? AND SlotID = ?',
+        [studentId, slotId]
+      );
+      const confirmedBooking = existingBookings.find(b => b.Status === 'Confirmed');
+      if (confirmedBooking) {
+        await connection.query('SELECT RELEASE_LOCK(?)', [lockName]);
+        await connection.rollback();
+        return res.status(409).json({
+          success: false,
+          error: 'You have already booked this session.'
+        });
+      }
+      // If there's a cancelled booking for this same slot, delete it to allow rebooking
+      const cancelledBooking = existingBookings.find(b => b.Status === 'Cancelled');
+      if (cancelledBooking) {
+        await connection.query('DELETE FROM Booking WHERE BookingID = ?', [cancelledBooking.BookingID]);
+      }
+
+      // 2. Block if the existing confirmed booking is with the same tutor AND same course on the same date (regardless of time)
+      if (slotTutorId) {
+        const [sameTutorSameCourse] = await connection.query(
+          `SELECT b.BookingID
+           FROM Booking b
+           JOIN AvailabilitySlot s ON b.SlotID = s.SlotID
+           WHERE b.StudentID = ?
+             AND b.Status = 'Confirmed'
+             AND s.TutorID = ?
+             AND s.Date = ?
+             AND s.CourseID = ?`,
+          [studentId, slotTutorId, slotDate, slotCourseId]
+        );
+        if (sameTutorSameCourse.length > 0) {
+          await connection.query('SELECT RELEASE_LOCK(?)', [lockName]);
+          await connection.rollback();
+          return res.status(409).json({
+            success: false,
+            error: 'You cannot attend the same course tutoring more than once on the same day.'
+          });
+        }
+      }
+
+      // 3. Find any confirmed bookings for this student that overlap the same date/time
       // Overlap condition: NOT (existing.EndTime <= new.StartTime OR existing.StartTime >= new.EndTime)
       const [overlaps] = await connection.query(
         `SELECT b.BookingID, b.Status, s.Date, s.StartTime, s.EndTime
@@ -84,52 +127,24 @@ const createBooking = async (req, res) => {
         });
       }
 
-      // Prevent booking another session with the same tutor on the same day
-      if (slotTutorId) {
-        // Only block if the existing confirmed booking is with the same tutor AND same course on the same date
-        const [sameTutorSameCourse] = await connection.query(
-          `SELECT b.BookingID
-           FROM Booking b
-           JOIN AvailabilitySlot s ON b.SlotID = s.SlotID
-           WHERE b.StudentID = ?
-             AND b.Status = 'Confirmed'
-             AND s.TutorID = ?
-             AND s.Date = ?
-             AND s.CourseID = ?`,
-          [studentId, slotTutorId, slotDate, slotCourseId]
-        );
-
-        if (sameTutorSameCourse.length > 0) {
-          await connection.query('SELECT RELEASE_LOCK(?)', [lockName]);
-          await connection.rollback();
-          return res.status(409).json({
-            success: false,
-            error: 'You already have a confirmed session with this tutor for the same course on the same day'
-          });
-        }
-      }
-
-      // If there's a previous booking for the same slot, handle it (duplicate/cancelled)
-      const [existingBookings] = await connection.query(
-        'SELECT BookingID, Status FROM Booking WHERE StudentID = ? AND SlotID = ?',
-        [studentId, slotId]
+      // 4. Block if the existing confirmed booking is for the same course on the same date (regardless of tutor or time)
+      const [sameCourseSameDay] = await connection.query(
+        `SELECT b.BookingID
+         FROM Booking b
+         JOIN AvailabilitySlot s ON b.SlotID = s.SlotID
+         WHERE b.StudentID = ?
+           AND b.Status = 'Confirmed'
+           AND s.Date = ?
+           AND s.CourseID = ?`,
+        [studentId, slotDate, slotCourseId]
       );
-
-      // If there's already a confirmed booking for this same slot, prevent duplicate
-      const confirmedBooking = existingBookings.find(b => b.Status === 'Confirmed');
-      if (confirmedBooking) {
+      if (sameCourseSameDay.length > 0) {
         await connection.query('SELECT RELEASE_LOCK(?)', [lockName]);
         await connection.rollback();
         return res.status(409).json({
           success: false,
-          error: 'You cannot book the same slot twice'
+          error: 'You cannot book the same course more than once on one day'
         });
-      }
-
-      // If there's a cancelled booking for this same slot, delete it to allow rebooking
-      const cancelledBooking = existingBookings.find(b => b.Status === 'Cancelled');
-      if (cancelledBooking) {
-        await connection.query('DELETE FROM Booking WHERE BookingID = ?', [cancelledBooking.BookingID]);
       }
 
       // Create the new booking
@@ -234,11 +249,13 @@ const cancelBooking = async (req, res) => {
 const getStudentUpcomingSessions = async (req, res) => {
   try {
     const { studentId } = req.params;
-    const { sort } = req.query;
+    const { sort, localDateTime } = req.query;
 
+    // Pass localDateTime to the stored procedure if provided, else fallback to NOW()
+    const filterDateTime = localDateTime || null;
     const [sessions] = await pool.query(
-      'CALL GetStudentSessions(?, ?)',
-      [studentId, sort || 'date']
+      'CALL GetStudentSessions(?, ?, ?)',
+      [studentId, sort || 'date', filterDateTime]
     );
 
     res.status(200).json({
@@ -329,6 +346,8 @@ const getTutorPastSessions = async (req, res) => {
     const [sessions] = await pool.query(
       `SELECT 
           b.BookingID,
+          b.StudentID,
+          b.SlotID,
           s.Date,
           s.StartTime,
           s.EndTime,

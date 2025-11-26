@@ -20,9 +20,6 @@ function Welcome({ onNavigate }) {
 
       <div>
         <h3>Tutors</h3>
-        <button className="btn" onClick={() => onNavigate('tutor-signup')}>
-          Sign Up as Tutor
-        </button>
         <button className="btn btn-secondary" onClick={() => onNavigate('tutor-signin')}>
           Tutor Sign In
         </button>

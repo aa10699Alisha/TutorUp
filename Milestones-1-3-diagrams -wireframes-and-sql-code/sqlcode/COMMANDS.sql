@@ -601,6 +601,7 @@ FROM AvailabilitySlot s
 JOIN Course c ON s.CourseID = c.CourseID
 JOIN Tutor  t ON s.TutorID = t.TutorID
 WHERE s.Date = CURDATE()
+  AND s.StartTime > CURTIME()
 ORDER BY s.StartTime;
 
 -- 12B. Show Next day’s slots

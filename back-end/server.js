@@ -17,7 +17,7 @@ async function startServer() {
   }
 
   listener = server.listen(port, function () {
-    console.log(`\n🚀 TutorUp Server running on port: ${port}`);
+    console.log(`\nTutorUp Server running on port: ${port}`);
     console.log(`Available APIs:`);
     console.log(`  - Auth:     http://localhost:${port}/api/auth`);
     console.log(`  - Tutors:   http://localhost:${port}/api/tutors`);

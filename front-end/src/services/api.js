@@ -1,3 +1,12 @@
+// Tutor marks attendance for a student in a session
+export const markAttendanceAsTutor = async (studentId, slotId, attended) => {
+  const response = await fetch(`${API_BASE_URL}/tutors/attendance`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ studentId, slotId, attended })
+  });
+  return response.json();
+};
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 // Auth API calls
@@ -97,9 +106,16 @@ export const cancelBooking = async (bookingId, studentId) => {
   return response.json();
 };
 
-export const getStudentUpcomingSessions = async (studentId, sort) => {
-  const param = sort ? `?sort=${encodeURIComponent(sort)}` : '';
-  const response = await fetch(`${API_BASE_URL}/bookings/student/${studentId}/upcoming${param}`);
+export const getStudentUpcomingSessions = async (studentId, sort, localDateTime) => {
+  // Accepts optional sort and localDateTime (string, 'YYYY-MM-DD HH:MM:SS')
+  let params = [];
+  if (sort) params.push(`sort=${encodeURIComponent(sort)}`);
+  // Use explicit third parameter
+  if (typeof localDateTime === 'string' && localDateTime) {
+    params.push(`localDateTime=${encodeURIComponent(localDateTime)}`);
+  }
+  const query = params.length > 0 ? `?${params.join('&')}` : '';
+  const response = await fetch(`${API_BASE_URL}/bookings/student/${studentId}/upcoming${query}`);
   return response.json();
 };
 
@@ -130,8 +146,14 @@ export const getTomorrowSlots = async () => {
   return response.json();
 };
 
-export const getSlotsByDate = async (date) => {
-  const response = await fetch(`${API_BASE_URL}/slots/date/${date}`);
+export const getSlotsByDate = async (date, options = {}) => {
+  // options.futureOnly: boolean - when true asks server to return only future slots for today
+  // options.localTime: string - local time in 'HH:MM:SS' format
+  const params = [];
+  if (options.futureOnly) params.push('futureOnly=true');
+  if (options.localTime) params.push(`localTime=${encodeURIComponent(options.localTime)}`);
+  const query = params.length > 0 ? `?${params.join('&')}` : '';
+  const response = await fetch(`${API_BASE_URL}/slots/date/${date}${query}`);
   return response.json();
 };
 
