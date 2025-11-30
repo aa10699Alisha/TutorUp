@@ -23,15 +23,35 @@ import TutorProfile from './components/Tutor/TutorProfile';
 import Settings from './components/settings/Settings';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('welcome');
-  const [user, setUser] = useState(null);
-  const [userType, setUserType] = useState(null);
+  const [currentPage, setCurrentPage] = useState(() => {
+    return localStorage.getItem('currentPage') || 'welcome';
+  });
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  const [userType, setUserType] = useState(() => {
+    return localStorage.getItem('userType') || null;
+  });
   const [selectedMajor, setSelectedMajor] = useState(null);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const drawerRef = useRef(null);
   const hamburgerRef = useRef(null);
   const [overlayMounted, setOverlayMounted] = useState(false);
+
+  // Persist authentication state to localStorage
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('userType', userType);
+      localStorage.setItem('currentPage', currentPage);
+    } else {
+      localStorage.removeItem('user');
+      localStorage.removeItem('userType');
+      localStorage.removeItem('currentPage');
+    }
+  }, [user, userType, currentPage]);
 
   // Close mobile drawer when clicking outside (in addition to overlay)
   useEffect(() => {
@@ -106,6 +126,10 @@ function App() {
       setCurrentPage('welcome');
       setSelectedMajor(null);
       setSelectedCourse(null);
+      // Clear localStorage
+      localStorage.removeItem('user');
+      localStorage.removeItem('userType');
+      localStorage.removeItem('currentPage');
     }
   };
 

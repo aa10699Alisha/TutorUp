@@ -105,16 +105,20 @@ The application uses a **MySQL database hosted on Aiven**. The database includes
    ```
 
 4. **Start the backend server:**
-   ```powershell
-   npm start
-   ```
    
-   Or for development with auto-reload:
+   **For Development (with auto-restart on file changes):**
    ```powershell
    npm run dev
    ```
+   
+   **For Production:**
+   ```powershell
+   npm start
+   ```
 
    The backend will run on `http://localhost:3001`
+   
+   **Note:** Always use `npm run dev` during development - the server will automatically restart when you save changes to any file!
 
 ### Frontend Setup
 
