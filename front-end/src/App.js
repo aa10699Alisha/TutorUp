@@ -33,8 +33,14 @@ function App() {
   const [userType, setUserType] = useState(() => {
     return localStorage.getItem('userType') || null;
   });
-  const [selectedMajor, setSelectedMajor] = useState(null);
-  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [selectedMajor, setSelectedMajor] = useState(() => {
+    const savedMajor = localStorage.getItem('selectedMajor');
+    return savedMajor ? JSON.parse(savedMajor) : null;
+  });
+  const [selectedCourse, setSelectedCourse] = useState(() => {
+    const savedCourse = localStorage.getItem('selectedCourse');
+    return savedCourse ? JSON.parse(savedCourse) : null;
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const drawerRef = useRef(null);
   const hamburgerRef = useRef(null);
@@ -52,6 +58,23 @@ function App() {
       localStorage.removeItem('currentPage');
     }
   }, [user, userType, currentPage]);
+
+  // Persist selected major and course to localStorage
+  useEffect(() => {
+    if (selectedMajor) {
+      localStorage.setItem('selectedMajor', JSON.stringify(selectedMajor));
+    } else {
+      localStorage.removeItem('selectedMajor');
+    }
+  }, [selectedMajor]);
+
+  useEffect(() => {
+    if (selectedCourse) {
+      localStorage.setItem('selectedCourse', JSON.stringify(selectedCourse));
+    } else {
+      localStorage.removeItem('selectedCourse');
+    }
+  }, [selectedCourse]);
 
   // Close mobile drawer when clicking outside (in addition to overlay)
   useEffect(() => {
