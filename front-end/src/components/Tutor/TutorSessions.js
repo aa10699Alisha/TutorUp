@@ -73,28 +73,6 @@ function TutorSessions({ tutorId, onNavigate }) {
     setShowPastSortMenu(false);
   };
 
-  // Client-side sort for past sessions
-  const sortedPastSessions = [...pastSessions].sort((a, b) => {
-    if (pastSortBy === "Recent") {
-      const dateStrA = a.Date.split("T")[0];
-      const dateStrB = b.Date.split("T")[0];
-      const dateA = new Date(`${dateStrA} ${a.StartTime}`);
-      const dateB = new Date(`${dateStrB} ${b.StartTime}`);
-      return dateB - dateA;
-    } else if (pastSortBy === "Oldest") {
-      const dateStrA = a.Date.split("T")[0];
-      const dateStrB = b.Date.split("T")[0];
-      const dateA = new Date(`${dateStrA} ${a.StartTime}`);
-      const dateB = new Date(`${dateStrB} ${b.StartTime}`);
-      return dateA - dateB;
-    } else if (pastSortBy === "Course") {
-      return a.CourseName.localeCompare(b.CourseName);
-    } else if (pastSortBy === "Student") {
-      return (a.StudentName || "").localeCompare(b.StudentName || "");
-    }
-    return 0;
-  });
-
   // 🔹 Group UPCOMING sessions by SlotID (or date+time) and merge students
   const groupedUpcomingSessions = Object.values(
     upcomingSessions.reduce((acc, session) => {
@@ -143,65 +121,89 @@ function TutorSessions({ tutorId, onNavigate }) {
   );
 
   // 🔹 Group PAST sessions by SlotID (or date+time) and merge students + their attendance/reviews
-  const groupedPastSessions = Object.values(
-    sortedPastSessions.reduce((acc, session) => {
-      const groupKey =
-        session.SlotID ||
-        `${session.Date}-${session.StartTime}-${session.CourseName || ""}`;
+  // First group by slot, then sort the grouped array
+  const groupedPastSessionsMap = pastSessions.reduce((acc, session) => {
+    const groupKey =
+      session.SlotID ||
+      `${session.Date}-${session.StartTime}-${session.CourseName || ""}`;
 
-      if (!acc[groupKey]) {
-        acc[groupKey] = {
-          ...session,
-          _students: [], // { id, name, attended, rating, comment }
-        };
-      }
+    if (!acc[groupKey]) {
+      acc[groupKey] = {
+        ...session,
+        _students: [], // { id, name, attended, rating, comment }
+      };
+    }
 
-      const tmpStudents = [];
+    const tmpStudents = [];
 
-      // Again handle both patterns: aggregated StudentNames or one row per student
-      if (session.StudentNames && session.StudentNames.trim() !== "") {
-        const names = session.StudentNames.split(", ");
-        const ids = session.StudentIDs ? session.StudentIDs.split("||") : [];
-        names.forEach((name, idx) => {
-          const id = ids[idx] || `${name}-${idx}`;
-          tmpStudents.push({
-            id,
-            studentId: ids[idx] || session.StudentID,
-            slotId: session.SlotID,
-            name,
-            attended: session.Attended,
-            rating: session.Rating,
-            comment: session.Comment,
-          });
-        });
-      } else if (session.StudentName && session.StudentName.trim() !== "") {
-        const id =
-          session.StudentID ||
-          session.StudentEmail ||
-          session.StudentName;
+    // Again handle both patterns: aggregated StudentNames or one row per student
+    if (session.StudentNames && session.StudentNames.trim() !== "") {
+      const names = session.StudentNames.split(", ");
+      const ids = session.StudentIDs ? session.StudentIDs.split("||") : [];
+      names.forEach((name, idx) => {
+        const id = ids[idx] || `${name}-${idx}`;
         tmpStudents.push({
           id,
-          studentId: session.StudentID,
+          studentId: ids[idx] || session.StudentID,
           slotId: session.SlotID,
-          name: session.StudentName,
-          attended: session.Attended,
+          name,
+          attended: session.Attended || session.AttendedStatus,
           rating: session.Rating,
           comment: session.Comment,
         });
-      }
-
-      tmpStudents.forEach((stu) => {
-        const already = acc[groupKey]._students.some(
-          (s) => s.id === stu.id && s.name === stu.name
-        );
-        if (!already) {
-          acc[groupKey]._students.push(stu);
-        }
       });
+    } else if (session.StudentName && session.StudentName.trim() !== "") {
+      const id =
+        session.StudentID ||
+        session.StudentEmail ||
+        session.StudentName;
+      tmpStudents.push({
+        id,
+        studentId: session.StudentID,
+        slotId: session.SlotID,
+        name: session.StudentName,
+        attended: session.Attended || session.AttendedStatus,
+        rating: session.Rating,
+        comment: session.Comment,
+      });
+    }
 
-      return acc;
-    }, {})
-  );
+    tmpStudents.forEach((stu) => {
+      const already = acc[groupKey]._students.some(
+        (s) => s.id === stu.id && s.name === stu.name
+      );
+      if (!already) {
+        acc[groupKey]._students.push(stu);
+      }
+    });
+
+    return acc;
+  }, {});
+
+  // Now sort the grouped past sessions based on the selected sort option
+  const groupedPastSessions = Object.values(groupedPastSessionsMap).sort((a, b) => {
+    if (pastSortBy === "Recent") {
+      const dateStrA = a.Date.split("T")[0];
+      const dateStrB = b.Date.split("T")[0];
+      const dateA = new Date(`${dateStrA} ${a.StartTime}`);
+      const dateB = new Date(`${dateStrB} ${b.StartTime}`);
+      return dateB - dateA; // Most recent first
+    } else if (pastSortBy === "Oldest") {
+      const dateStrA = a.Date.split("T")[0];
+      const dateStrB = b.Date.split("T")[0];
+      const dateA = new Date(`${dateStrA} ${a.StartTime}`);
+      const dateB = new Date(`${dateStrB} ${b.StartTime}`);
+      return dateA - dateB; // Oldest first
+    } else if (pastSortBy === "Course") {
+      return (a.CourseName || "").localeCompare(b.CourseName || "");
+    } else if (pastSortBy === "Student") {
+      // Sort by first student's name in the group
+      const nameA = a._students[0]?.name || "";
+      const nameB = b._students[0]?.name || "";
+      return nameA.localeCompare(nameB);
+    }
+    return 0;
+  });
 
   if (loading) {
     return <div className="loading">Loading sessions...</div>;
@@ -373,30 +375,40 @@ function TutorSessions({ tutorId, onNavigate }) {
                         paddingLeft: 18,
                       }}
                     >
-                      {students.map((stu) => (
-                        <li key={stu.id}>
+                      {students.map((stu, stuIndex) => (
+                        <li 
+                          key={stu.id}
+                          style={{
+                            marginBottom: students.length > 1 ? "16px" : "0",
+                            paddingBottom: students.length > 1 && stuIndex < students.length - 1 ? "16px" : "0",
+                            borderBottom: students.length > 1 && stuIndex < students.length - 1 ? "1px solid #e0e0e0" : "none"
+                          }}
+                        >
                           <div>
                             <strong>{stu.name}</strong>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
                             <strong>Attended:</strong>{" "}
                             <input
                               type="checkbox"
                               checked={stu.attended === 'Yes'}
+                              disabled={stu.attended === 'Yes' || stu.attended === 'No'}
                               onChange={e => handleTutorMarkAttendance(
                                 stu.studentId,
                                 stu.slotId,
                                 e.target.checked
                               )}
+                              style={{
+                                cursor: stu.attended === 'Yes' || stu.attended === 'No' ? 'not-allowed' : 'pointer'
+                              }}
                             />
-                            <span>{stu.attended === 'Yes' ? 'Yes' : stu.attended === 'No' ? 'No' : 'Not marked'}</span>
                           </div>
                           {stu.rating && (
                             <div
                               style={{
-                                marginTop: "4px",
+                                marginTop: "8px",
                                 background: "#e8f5e9",
-                                padding: "6px",
+                                padding: "8px",
                                 borderRadius: "4px",
                               }}
                             >
