@@ -381,7 +381,7 @@ BEGIN
     JOIN Course c           ON s.CourseID = c.CourseID
     JOIN Tutor t            ON s.TutorID = t.TutorID
     WHERE b.StudentID = p_student_id
-      AND s.Date >= CURDATE()
+      AND TIMESTAMP(s.Date, s.EndTime) >= NOW()
       AND b.Status <> 'Cancelled'
     ORDER BY t.FullName, s.Date, s.StartTime;
 
@@ -401,7 +401,7 @@ BEGIN
     JOIN Course c           ON s.CourseID = c.CourseID
     JOIN Tutor t            ON s.TutorID = t.TutorID
     WHERE b.StudentID = p_student_id
-      AND s.Date >= CURDATE()
+      AND TIMESTAMP(s.Date, s.EndTime) >= NOW()
       AND b.Status <> 'Cancelled'
     ORDER BY c.CourseName, s.Date, s.StartTime;
 
@@ -421,7 +421,7 @@ BEGIN
     JOIN Course c           ON s.CourseID = c.CourseID
     JOIN Tutor t            ON s.TutorID = t.TutorID
     WHERE b.StudentID = p_student_id
-      AND s.Date >= CURDATE()
+      AND TIMESTAMP(s.Date, s.EndTime) >= NOW()
       AND b.Status <> 'Cancelled'
     ORDER BY s.Date, s.StartTime;
   END IF;

@@ -41,7 +41,7 @@ function StudentSessions({ studentId, onNavigate }) {
       console.log('[StudentSessions] Fetching upcoming and past sessions', { studentId, sort: sortParamMap[sortBy], localDateTime });
       const [upcomingResult, pastResult] = await Promise.all([
         getStudentUpcomingSessions(studentId, sortParamMap[sortBy], localDateTime),
-        getStudentPastSessions(studentId)
+        getStudentPastSessions(studentId, localDateTime)
       ]);
 
       console.log('[StudentSessions] Upcoming result:', upcomingResult);

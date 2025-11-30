@@ -416,8 +416,6 @@ body.no-scroll {
   stroke-width: 2.6;
   stroke-linecap: round;
   transition: transform .35s cubic-bezier(.22,.61,.36,1), opacity .25s ease;
-  transform-origin: 50% 50%;
-  transform-box: fill-box;
 }
 
 .hamburger-button.open .hamburger-icon line:nth-child(1) {
@@ -475,46 +473,6 @@ body.no-scroll {
   }
   .mobile-drawer.open {
     transform: translateX(0);
-  }
-
-  .drawer-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.35);
-  }
-  .drawer-title {
-    font-size: 1.5em;
-    font-weight: 700;
-    color: #ffffff;
-    letter-spacing: .6px;
-  }
-  .drawer-close-button {
-    background: transparent;
-    border: none;
-    width: 42px;
-    height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    border-radius: 8px;
-    transition: background .25s ease, transform .25s ease;
-  }
-  .drawer-close-button:hover {
-    background: rgba(255,255,255,0.18);
-    transform: rotate(5deg);
-  }
-  .drawer-close-button:active {
-    transform: scale(.92);
-  }
-  .close-icon line {
-    stroke: #ffffff;
-    stroke-width: 2.6;
-    stroke-linecap: round;
   }
 
   .mobile-drawer-item {
