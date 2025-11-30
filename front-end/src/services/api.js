@@ -119,8 +119,9 @@ export const getStudentUpcomingSessions = async (studentId, sort, localDateTime)
   return response.json();
 };
 
-export const getStudentPastSessions = async (studentId) => {
-  const response = await fetch(`${API_BASE_URL}/bookings/student/${studentId}/past`);
+export const getStudentPastSessions = async (studentId, localDateTime) => {
+  const param = localDateTime ? `?localDateTime=${encodeURIComponent(localDateTime)}` : '';
+  const response = await fetch(`${API_BASE_URL}/bookings/student/${studentId}/past${param}`);
   return response.json();
 };
 

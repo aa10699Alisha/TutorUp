@@ -20,7 +20,7 @@ BEGIN
         JOIN Course c ON s.CourseID = c.CourseID
         JOIN Tutor t ON s.TutorID = t.TutorID
         WHERE b.StudentID = p_student_id
-          AND CONCAT(s.Date, ' ', s.StartTime) >= filter_datetime
+          AND TIMESTAMP(s.Date, s.EndTime) >= filter_datetime
           AND b.Status <> 'Cancelled'
         ORDER BY t.FullName, s.Date, s.StartTime;
     ELSEIF p_sort = 'course' THEN
@@ -30,7 +30,7 @@ BEGIN
         JOIN Course c ON s.CourseID = c.CourseID
         JOIN Tutor t ON s.TutorID = t.TutorID
         WHERE b.StudentID = p_student_id
-          AND CONCAT(s.Date, ' ', s.StartTime) >= filter_datetime
+          AND TIMESTAMP(s.Date, s.EndTime) >= filter_datetime
           AND b.Status <> 'Cancelled'
         ORDER BY c.CourseName, s.Date, s.StartTime;
     ELSE
@@ -40,7 +40,7 @@ BEGIN
         JOIN Course c ON s.CourseID = c.CourseID
         JOIN Tutor t ON s.TutorID = t.TutorID
         WHERE b.StudentID = p_student_id
-          AND CONCAT(s.Date, ' ', s.StartTime) >= filter_datetime
+          AND TIMESTAMP(s.Date, s.EndTime) >= filter_datetime
           AND b.Status <> 'Cancelled'
         ORDER BY s.Date, s.StartTime;
     END IF;

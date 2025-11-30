@@ -275,9 +275,9 @@ const getStudentUpcomingSessions = async (req, res) => {
 const getStudentPastSessions = async (req, res) => {
   try {
     const { studentId } = req.params;
+    const { localDateTime } = req.query;
 
-    const [sessions] = await pool.query(
-      `SELECT b.BookingID,
+    let sql = `SELECT b.BookingID,
               b.Status,
               s.Date,
               s.StartTime,
@@ -294,12 +294,21 @@ const getStudentPastSessions = async (req, res) => {
        JOIN Tutor t ON s.TutorID = t.TutorID
        LEFT JOIN Attendance a ON b.BookingID = a.BookingID
        LEFT JOIN Review r ON b.BookingID = r.BookingID
-       WHERE b.StudentID = ? 
-         AND CONCAT(s.Date, ' ', s.EndTime) < NOW()
-         AND b.Status <> 'Cancelled'
-       ORDER BY s.Date DESC, s.StartTime DESC`,
-      [studentId]
-    );
+       WHERE b.StudentID = ?
+         AND TIMESTAMP(s.Date, s.EndTime) < `;
+
+    const params = [studentId];
+    if (localDateTime) {
+      sql += `?`;
+      params.push(localDateTime);
+    } else {
+      sql += `NOW()`;
+    }
+
+    sql += ` AND b.Status <> 'Cancelled'
+       ORDER BY s.Date DESC, s.StartTime DESC`;
+
+    const [sessions] = await pool.query(sql, params);
 
     res.status(200).json({
       success: true,
