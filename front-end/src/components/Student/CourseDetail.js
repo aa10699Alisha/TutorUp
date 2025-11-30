@@ -85,6 +85,14 @@ function CourseDetail({ course, studentId, onNavigate }) {
     return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   };
 
+  const isPastDay = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selected = new Date(currentDate);
+    selected.setHours(0, 0, 0, 0);
+    return selected <= today;
+  };
+
   const handleBookSlot = async (slotId) => {
     setError('');
     setSuccess('');
@@ -146,10 +154,14 @@ function CourseDetail({ course, studentId, onNavigate }) {
       <h3 style={{ marginTop: '30px' }}>Available Tutoring Slots</h3>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
-        <button className="btn btn-secondary date-nav-button" onClick={goToPreviousDay}>
-          <span className="desktop-only">← Previous Day</span>
-          <span className="mobile-only">←</span>
-        </button>
+        {!isPastDay() ? (
+          <button className="btn btn-secondary date-nav-button" onClick={goToPreviousDay}>
+            <span className="desktop-only">← Previous Day</span>
+            <span className="mobile-only">←</span>
+          </button>
+        ) : (
+          <div style={{ width: '160px' }}></div>
+        )}
         <div style={{ flex: 1, textAlign: 'center' }}>
           <h4 style={{ margin: 0 }}>{formatDate(currentDate)}</h4>
         </div>
