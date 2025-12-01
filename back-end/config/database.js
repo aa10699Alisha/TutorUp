@@ -1,3 +1,4 @@
+// database.js
 const mysql = require('mysql2/promise');
 require('dotenv').config();
 
@@ -12,11 +13,13 @@ const pool = mysql.createPool({
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
-  // 👇 ADD THIS
   dateStrings: true
 });
 
-
+// Set timezone to EST for all connections
+pool.on('connection', (connection) => {
+  connection.query("SET time_zone='-05:00'");
+});
 
 // Test the connection
 const testConnection = async () => {

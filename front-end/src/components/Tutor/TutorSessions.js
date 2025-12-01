@@ -357,7 +357,7 @@ function TutorSessions({ tutorId, onNavigate }) {
                 <h4>{session.CourseName}</h4>
                 <p>
                   <strong>Date:</strong>{" "}
-                  {new Date(session.Date).toLocaleDateString()}
+                  {new Date(session.Date + 'T00:00:00').toLocaleDateString()}
                 </p>
                 <p>
                   <strong>Time:</strong> {session.StartTime} - {session.EndTime}

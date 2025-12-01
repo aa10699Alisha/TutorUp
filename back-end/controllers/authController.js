@@ -1,5 +1,28 @@
+// authController.js 
+// This controller handles user authentication for students and tutors
+
 const { pool } = require('../config/database');
 const bcrypt = require('bcrypt');
+
+/**
+ * Validate password strength
+ * Rules: min 6 chars, at least 1 uppercase, 1 lowercase, 1 number
+ */
+const validatePassword = (password) => {
+  if (password.length < 6) {
+    return { valid: false, error: 'Password must be at least 6 characters long' };
+  }
+  if (!/[a-z]/.test(password)) {
+    return { valid: false, error: 'Password must contain at least one lowercase letter' };
+  }
+  if (!/[A-Z]/.test(password)) {
+    return { valid: false, error: 'Password must contain at least one uppercase letter' };
+  }
+  if (!/[0-9]/.test(password)) {
+    return { valid: false, error: 'Password must contain at least one number' };
+  }
+  return { valid: true };
+};
 
 /**
  * POST /api/auth/student/signup
@@ -13,6 +36,15 @@ const studentSignup = async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'All fields are required'
+      });
+    }
+
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        error: passwordValidation.error
       });
     }
 
@@ -66,6 +98,15 @@ const tutorSignup = async (req, res) => {
       return res.status(400).json({
         success: false,
         error: 'Name, email, and password are required'
+      });
+    }
+
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({
+        success: false,
+        error: passwordValidation.error
       });
     }
 
@@ -221,7 +262,7 @@ const tutorSignin = async (req, res) => {
 
 module.exports = {
   studentSignup,
-  tutorSignup,
   studentSignin,
   tutorSignin
+  // tutorSignup removed - tutors are created by admins only
 };

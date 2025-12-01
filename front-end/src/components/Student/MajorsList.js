@@ -20,7 +20,7 @@ const majorImages = {
   'psychology': 'Psychology.png',
   'Psychology.jpeg': 'Psychology.png',
 };
-const fallbackImage = '/course-images/default.jpg'; // Add a default.jpg image if you want a fallback
+const fallbackImage = '/course-images/default.jpg'; 
 
 function MajorsList({ onNavigate, onSelectMajor }) {
   const [majors, setMajors] = useState([]);

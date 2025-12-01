@@ -3,13 +3,13 @@
 # TutorUp Development Startup Script
 # This script starts both backend and frontend in development mode
 
-echo "🚀 Starting TutorUp in Development Mode..."
+echo "Starting TutorUp in Development Mode..."
 echo ""
 
 # Function to cleanup on exit
 cleanup() {
     echo ""
-    echo "🛑 Shutting down TutorUp..."
+    echo "Shutting down TutorUp..."
     kill $(jobs -p) 2>/dev/null
     exit
 }
@@ -17,7 +17,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # Start backend with nodemon
-echo "📡 Starting Backend (with auto-restart)..."
+echo "Starting Backend (with auto-restart)..."
 cd back-end
 npm run dev &
 BACKEND_PID=$!
@@ -26,17 +26,17 @@ BACKEND_PID=$!
 sleep 3
 
 # Start frontend
-echo "🎨 Starting Frontend..."
+echo "Starting Frontend..."
 cd ../front-end
 npm start &
 FRONTEND_PID=$!
 
 echo ""
-echo "✅ TutorUp is running!"
+echo "TutorUp is running!"
 echo "   Backend:  http://localhost:3001"
 echo "   Frontend: http://localhost:3000"
 echo ""
-echo "📝 Backend will auto-restart when you save changes"
+echo "Backend will auto-restart when you save changes"
 echo "Press Ctrl+C to stop both servers"
 echo ""
 
