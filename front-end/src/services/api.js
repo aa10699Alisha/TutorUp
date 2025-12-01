@@ -19,14 +19,7 @@ export const studentSignup = async (userData) => {
   return response.json();
 };
 
-export const tutorSignup = async (userData) => {
-  const response = await fetch(`${API_BASE_URL}/auth/tutor/signup`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(userData)
-  });
-  return response.json();
-};
+// Tutor signup removed - tutors are created by admins only
 
 export const studentSignin = async (credentials) => {
   const response = await fetch(`${API_BASE_URL}/auth/student/signin`, {

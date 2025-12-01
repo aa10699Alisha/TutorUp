@@ -1,3 +1,5 @@
+// bookingsController.js
+// This controller manages booking operations for students and tutors 
 const { pool } = require('../config/database');
 
 const createBooking = async (req, res) => {
@@ -16,8 +18,7 @@ const createBooking = async (req, res) => {
     connection = await pool.getConnection();
     await connection.beginTransaction();
 
-    // Lock the slot row to avoid race conditions when checking availability
-    // Also fetch the slot date/time so we can check for overlaps
+    // Fetch the slot date/time so we can check for overlaps
     const [slots] = await connection.query(
       'SELECT Status, Date, StartTime, EndTime, TutorID, CourseID FROM AvailabilitySlot WHERE SlotID = ? FOR UPDATE',
       [slotId]
@@ -40,13 +41,9 @@ const createBooking = async (req, res) => {
     }
 
     // Prevent overlapping bookings for the same student.
-    // Approach: acquire a named lock per-student to serialize booking attempts for that student,
-    // then check for any Confirmed bookings that overlap the target slot's date/time.
-    // This avoids race conditions where two concurrent requests could both pass the check.
-
     const slot = slots[0];
-    const slotDate = slot.Date; // assuming format 'YYYY-MM-DD'
-    const slotStart = slot.StartTime; // assuming time string 'HH:MM:SS'
+    const slotDate = slot.Date; // format 'YYYY-MM-DD'
+    const slotStart = slot.StartTime; // time string 'HH:MM:SS'
     const slotEnd = slot.EndTime;
   const slotTutorId = slot.TutorID;
   const slotCourseId = slot.CourseID;
@@ -373,7 +370,7 @@ const getTutorPastSessions = async (req, res) => {
        LEFT JOIN Attendance a ON b.BookingID = a.BookingID   
        LEFT JOIN Review r ON b.BookingID = r.BookingID
        WHERE s.TutorID = ? 
-         AND CONCAT(s.Date, ' ', s.EndTime) < NOW()
+         AND TIMESTAMP(s.Date, s.StartTime) < NOW()
          AND b.Status = 'Confirmed'
        ORDER BY s.Date DESC, s.StartTime DESC`,
       [tutorId]

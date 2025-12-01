@@ -1,3 +1,6 @@
+// studentsController.js
+// This controller manages student profile and account operations
+
 const { pool } = require('../config/database');
 const bcrypt = require('bcrypt');
 

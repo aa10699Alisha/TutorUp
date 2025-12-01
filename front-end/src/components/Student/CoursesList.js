@@ -3,14 +3,10 @@ import { getCoursesByMajor } from '../../services/api';
 
 // Map course codes or names to image filenames
 const courseImages = {
-  // Example: 'CS101': 'cs101.jpg',
-  // 'Mathematics': 'math.jpg',
-  // Add your mappings here
   'CS101': 'cs101.jpg',
   'MATH201': 'math201.jpg',
   'PHYS101': 'physics.jpg',
   'CHEM101': 'chemistry.jpg',
-  // fallback for demonstration
 };
 
 function CoursesList({ major, onNavigate, onSelectCourse }) {

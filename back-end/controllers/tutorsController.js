@@ -1,3 +1,6 @@
+// tutorsController.js
+// This controller manages tutor profile and account operations
+
 const { pool } = require('../config/database');
 
 const getTutorById = async (req, res) => {

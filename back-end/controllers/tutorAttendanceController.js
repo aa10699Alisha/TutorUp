@@ -1,3 +1,6 @@
+// tutorAttendanceController.js
+// This controller manages tutor marking attendance for students
+
 const { pool } = require('../config/database');
 
 // Tutor marks attendance for a student in a slot/session

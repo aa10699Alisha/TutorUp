@@ -1,17 +1,7 @@
 const { pool } = require('../config/database');
 
 /**
- * Simple script to demonstrate duplicate booking behavior.
- * Usage:
- *   node back-end/scripts/test_duplicate_booking.js <slotId> <studentId>
- *
- * The script will attempt to insert two bookings for the same student+slot.
- * If your DB has the unique constraint on (StudentID, SlotID) this script
- * should show the second insert failing with ER_DUP_ENTRY.
- *
- * NOTE: This script connects to your configured DB using the same pool as the app.
- * Make sure your environment variables are set (or run from the project root where
- * .env is configured).
+ * Attempt to insert two bookings for the same student+slot.
  */
 
 async function run() {

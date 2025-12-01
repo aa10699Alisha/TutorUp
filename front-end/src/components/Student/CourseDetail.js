@@ -20,20 +20,17 @@ function CourseDetail({ course, studentId, onNavigate }) {
     if (course) {
       fetchSlots();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [course, currentDate]);
 
   const fetchSlots = async () => {
     setLoading(true);
     try {
-      // Build date string in local time (YYYY-MM-DD) to avoid UTC shift from toISOString()
       const dateStr = [
         currentDate.getFullYear(),
         String(currentDate.getMonth() + 1).padStart(2, '0'),
         String(currentDate.getDate()).padStart(2, '0')
       ].join('-');
 
-      // If user requested today's date, ask backend for future-only slots and pass local time
       const todayLocal = new Date();
       const todayStr = [
         todayLocal.getFullYear(),

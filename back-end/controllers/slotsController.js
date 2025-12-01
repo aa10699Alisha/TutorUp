@@ -1,3 +1,5 @@
+// slotsController.js
+// This controller manages availability slots for tutors
 const { pool } = require('../config/database');
 
 const getTodaySlots = async (req, res) => {

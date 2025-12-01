@@ -1,3 +1,5 @@
+// coursesController.js
+// This controller manages course and major data retrieval
 const { pool } = require('../config/database');
 
 const getAllMajors = async (req, res) => {
@@ -117,7 +119,7 @@ const getAvailableSlotsByCourse = async (req, res) => {
        JOIN Tutor t ON s.TutorID = t.TutorID
        WHERE s.CourseID = ? 
          AND s.Status = 'Open'
-         AND CONCAT(s.Date, ' ', s.StartTime) >= NOW()
+         AND TIMESTAMP(s.Date, s.StartTime) >= NOW()
        ORDER BY s.Date, s.StartTime`,
       [courseId]
     );

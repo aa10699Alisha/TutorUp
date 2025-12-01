@@ -4,7 +4,6 @@ import './App.css';
 // Auth Components
 import Welcome from './components/Auth/Welcome';
 import StudentSignup from './components/Auth/StudentSignup';
-import TutorSignup from './components/Auth/TutorSignup';
 import StudentSignin from './components/Auth/StudentSignin';
 import TutorSignin from './components/Auth/TutorSignin';
 
@@ -162,8 +161,6 @@ function App() {
         return <Welcome onNavigate={setCurrentPage} />;
       case 'student-signup':
         return <StudentSignup onNavigate={setCurrentPage} onLogin={handleLogin} />;
-      case 'tutor-signup':
-        return <TutorSignup onNavigate={setCurrentPage} onLogin={handleLogin} />;
       case 'student-signin':
         return <StudentSignin onNavigate={setCurrentPage} onLogin={handleLogin} />;
       case 'tutor-signin':
